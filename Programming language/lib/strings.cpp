@@ -153,3 +153,17 @@ bool is_braket(char character)
 
     return false;
 }
+
+
+void delete_terminator(char * buffer)
+{
+    MY_ASSERT(buffer);
+
+    while (*buffer != '\0')
+    {
+        buffer++;
+    }
+    *buffer = ' ';
+
+    return;
+}

@@ -1,4 +1,4 @@
-int abobus = 12;
+int abobus= 12;
 char
 ;;
 () {

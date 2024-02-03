@@ -14,5 +14,6 @@
     char * make_file_extension(char * target, const char * file_name, const char * extension);
     size_t get_input(char * buffer, size_t buffer_size);
     bool is_braket(char character);
+    void delete_terminator(char * buffer);
 
 #endif // STRINGS_H

@@ -39,6 +39,7 @@ TError_t op_new_tree(Tree * tree, const Tree_t root_value)
 
     tree->root->left = NULL;
     tree->root->right = NULL;
+    tree->root->parent = NULL;
 
     tree->root->value = root_value;
 
@@ -46,7 +47,7 @@ TError_t op_new_tree(Tree * tree, const Tree_t root_value)
 }
 
 
-static size_t tree_free(TreeNode * main_node)
+static size_t tree_free(TreeNode * * main_node)
 {
     MY_ASSERT(main_node);
 
@@ -56,22 +57,24 @@ static size_t tree_free(TreeNode * main_node)
 }
 
 
-static size_t tree_free_iternal(TreeNode * node, size_t * count)
+static size_t tree_free_iternal(TreeNode * * node, size_t * count)
 {
     MY_ASSERT(node);
+    MY_ASSERT(*node);
     MY_ASSERT(count);
 
-    if (node->left)
+    if ((*node)->left)
     {
-        tree_free_iternal(node->left, count);
+        tree_free_iternal(&(*node)->left, count);
     }
 
-    if (node->right)
+    if ((*node)->right)
     {
-        tree_free_iternal(node->right, count);
+        tree_free_iternal(&(*node)->right, count);
     }
 
-    free(node);
+    free(*node);
+    *node = NULL;
     (*count)++;
 
     return *count;
@@ -84,13 +87,13 @@ TError_t op_delete_tree(Tree * tree)
 
     TError_t errors = 0;
 
-    if (tree->root == NULL)
+    if (!tree->root)
     {
         errors |= TREE_ERRORS_ALREADY_DESTRUCTED;
         return errors;
     }
 
-    if (tree_free(tree->root) != tree->size)
+    if (tree_free(&(tree->root)) != tree->size)
         errors |= TREE_ERRORS_INVALID_SIZE;
     tree->size = TRASH_VALUE;
 
@@ -114,7 +117,7 @@ TError_t tree_vtor(const Tree * tree)
 }
 
 
-static TError_t tree_create_node(Tree * tree, TreeNode * * node_ptr)
+static TError_t tree_create_node(Tree * tree, TreeNode * const parent_node, TreeNode * * node_ptr)
 {
     MY_ASSERT(tree);
     MY_ASSERT(!*node_ptr);
@@ -129,8 +132,9 @@ static TError_t tree_create_node(Tree * tree, TreeNode * * node_ptr)
 
     (*node_ptr)->left = NULL;
     (*node_ptr)->right = NULL;
+    (*node_ptr)->parent = parent_node;
 
-    (*node_ptr)->value = 0;
+    (*node_ptr)->value = TREE_NULL;
 
     tree->size++;
 
@@ -158,7 +162,7 @@ TError_t tree_insert(Tree * tree, TreeNode * node, TreeNodeBranches mode, const 
                 return errors;
             }
 
-            if (errors = tree_create_node(tree, &node->left))
+            if (errors = tree_create_node(tree, node, &node->left))
                 return errors;
 
             node->left->value = value;
@@ -172,7 +176,7 @@ TError_t tree_insert(Tree * tree, TreeNode * node, TreeNodeBranches mode, const 
                 return errors;
             }
 
-            if (errors = tree_create_node(tree, &node->right))
+            if (errors = tree_create_node(tree, node, &node->right))
                 return errors;
 
             node->right->value = value;
@@ -188,10 +192,11 @@ TError_t tree_insert(Tree * tree, TreeNode * node, TreeNodeBranches mode, const 
 }
 
 
-TError_t tree_delete_branch(Tree * tree, TreeNode * node)
+TError_t tree_delete_branch(Tree * tree, TreeNode * * node)
 {
     MY_ASSERT(tree);
     MY_ASSERT(node);
+    MY_ASSERT(*node);
 
     TError_t errors = 0;
 
@@ -201,6 +206,7 @@ TError_t tree_delete_branch(Tree * tree, TreeNode * node)
     }
 
     size_t deleting_nodes_count = tree_free(node);
+    *node = NULL;
 
     if (tree->size < deleting_nodes_count)
     {
@@ -342,4 +348,30 @@ static void print_text_nodes(const TreeNode * main_node)
     }
 
     return;
+}
+
+
+TError_t tree_copy_branch(Tree * dst_tree, TreeNode * dst_node, const TreeNode * src_node)
+{
+    MY_ASSERT(dst_tree);
+    MY_ASSERT(dst_node);
+    MY_ASSERT(src_node);
+
+    TError_t errors = 0;
+
+    dst_node->value = src_node->value;
+
+    if (src_node->left)
+    {
+       errors |= tree_insert(dst_tree, dst_node, TREE_NODE_BRANCH_LEFT, TREE_NULL);
+       tree_copy_branch(dst_tree, dst_node->left, src_node->left);
+    }
+
+    if (src_node->right)
+    {
+       errors |= tree_insert(dst_tree, dst_node, TREE_NODE_BRANCH_RIGHT, TREE_NULL);
+       tree_copy_branch(dst_tree, dst_node->right, src_node->right);
+    }
+
+    return errors;
 }

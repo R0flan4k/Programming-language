@@ -10,8 +10,9 @@ KeyWord KEY_WORDS_ARRAY[] = {
     create_key_word("bool",   len(sizeof("bool")),   KEY_WORDS_BOOL),
     create_key_word("char",   len(sizeof("char")),   KEY_WORDS_CHAR),
     create_key_word("if",     len(sizeof("if")),     KEY_WORDS_IF),
-    create_key_word("while",  len(sizeof("while")),  KEY_WORDS_IF),
-    create_key_word("return", len(sizeof("return")), KEY_WORDS_IF),
+    create_key_word("while",  len(sizeof("while")),  KEY_WORDS_WHILE),
+    create_key_word("return", len(sizeof("return")), KEY_WORDS_RETURN),
+    create_key_word("func",   len(sizeof("func")),   KEY_WORDS_FUNCTION_START),
 };
 size_t KEY_WORDS_ARRAY_SIZE = sizeof(KEY_WORDS_ARRAY) / sizeof(KEY_WORDS_ARRAY[0]);
 

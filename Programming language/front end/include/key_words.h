@@ -13,6 +13,7 @@
         KEY_WORDS_IF,
         KEY_WORDS_WHILE,
         KEY_WORDS_RETURN,
+        KEY_WORDS_FUNCTION_START,
     };
 
     struct KeyWord {
