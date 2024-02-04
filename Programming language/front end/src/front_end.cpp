@@ -266,10 +266,14 @@ static FrontEndErrors get_function(FrontEndToken * tokens, NameTable * name_tabl
     (*token_index)++;
 
     fe_errors |= get_operator(tokens, name_table, token_index,
-                              program_tree, tmp_tree.root->left->right);
+                              &tmp_tree, tmp_tree.root->left->right);
 
     if (fe_errors)
         return fe_errors;
+
+    #if 0
+    cycle get operator
+    #endif
 
     #if 0
     if (tokens[*token_index].type != TOKEN_TYPES_SYMBOL ||
@@ -279,9 +283,94 @@ static FrontEndErrors get_function(FrontEndToken * tokens, NameTable * name_tabl
     }
     #endif
 
+    #if 0
+    copy branch from tmp_tree to func root
+    #endif
+
     (*token_index)++;
 
     return fe_errors;
+}
+
+
+static FrontEndErrors get_operator(FrontEndToken * tokens, NameTable * name_table, size_t * token_index,
+                                   Tree * operator_tree, TreeNode * * operator_root)
+{
+    MY_ASSERT(tokens);
+    MY_ASSERT(name_table);
+    MY_ASSERT(token_index);
+    MY_ASSERT(program_tree);
+    MY_ASSERT(body_root);
+    MY_ASSERT(!(*body_root));
+
+    FrontEndErrors fe_errors = 0;
+    TError_t tree_errors = 0;
+    Tree_t operator_node_value = {};
+    Tree tmp_tree = {};
+
+    bool is_if_var = false, is_while_var = false, is_return_var = false;
+
+    if (!(is_if_var = is_if(tokens, token_index)) && !(is_while_var = is_while(tokens, token_index)) &&
+        !(is_return_var = is_return(tokens, token_index)))
+    {
+        fe_errors |= get_statement(tokens, name_table, token_index, &tmp_tree);
+    }
+    else if
+    {
+        operator_node_value = {.val = {.string = tokens[*token_index].var.kwd.name},
+                               .type = TREE_NODE_TYPES_STRING};
+        tree_errors |= op_new_tree(&tmp_tree, operator_node_value);
+        (*token_index)++;
+    }
+
+    if (is_if_var)
+        fe_errors |= get_if(tokens, name_table, token_index, &tmp_tree);
+    else if (is_while_var)
+        fe_errors |= get_while(tokens, name_table, token_index, &tmp_tree);
+    else if (is_return_var)
+        fe_errors |= get_return(tokens, name_table, token_index, &tmp_tree);
+    else
+        MY_ASSERT(0 && "UNREACHABLE");
+
+    #if 0
+    copy branch to operator tree from tmp_tree
+    #endif
+}
+
+
+static bool is_while(FrontEndToken * tokens, size_t * token_index)
+{
+    if (tokens[*token_index].type == TOKEN_TYPES_KEY_WORD &&
+        tokens[*token_index].val.kwd.id == KEY_WORDS_WHILE)
+    {
+        return true;
+    }
+
+    return false;
+}
+
+
+static bool is_if(FrontEndToken * tokens, size_t * token_index)
+{
+    if (tokens[*token_index].type == TOKEN_TYPES_KEY_WORD &&
+        tokens[*token_index].val.kwd.id == KEY_WORDS_IF)
+    {
+        return true;
+    }
+
+    return false;
+}
+
+
+static bool is_return(FrontEndToken * tokens, size_t * token_index)
+{
+    if (tokens[*token_index].type == TOKEN_TYPES_KEY_WORD &&
+        tokens[*token_index].val.kwd.id == KEY_WORDS_RETURN)
+    {
+        return true;
+    }
+
+    return false;
 }
 
 
