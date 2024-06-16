@@ -9,6 +9,7 @@
         KEY_WORDS_DOUBLE,
         KEY_WORDS_BOOL,
         KEY_WORDS_CHAR,
+        KEY_WORDS_VOID,
 
         KEY_WORDS_IF,
         KEY_WORDS_WHILE,

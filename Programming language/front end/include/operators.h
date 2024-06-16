@@ -12,6 +12,9 @@
         OPERATORS_POWER,
         OPERATORS_ASSIGMENT,
         OPERATORS_END_OF_OP,
+        OPERATORS_BELOW,
+        OPERATORS_ABOVE,
+        OPERATORS_EQUAL,
     };
 
     struct Operator {

@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "front_end.h"
 #include "file_processing.h"
@@ -19,8 +20,7 @@ int main(int argc, char * argv[])
     long buffer_size = 0;
     if (!(buffer_size = text_file_to_buffer(SOURCE_FILE_NAME, &buffer)))
     {
-        fe_errors |= FRONT_END_ERRORS_CANT_CONVERT_SOURCE_FILE;
-        return fe_errors;
+        return FRONT_END_ERRORS_CANT_CONVERT_SOURCE_FILE;
     }
 
     FrontEndToken tokens[MAX_TOKENS_NUMBER] = {};
@@ -30,11 +30,21 @@ int main(int argc, char * argv[])
 
     if (fe_errors)
     {
-        printf("Tokens separate error: %d.\n", fe_errors);
+        fe_error_output(fe_errors, 0);
         return fe_errors;
     }
+    tokens_dump(tokens, &name_table);
 
-    tokens_dump(tokens);
+    size_t token_index = 0;
+    Tree program_tree = {};
+    TError_t tree_errors = op_new_tree(&program_tree, TREE_NULL);
+    if (tree_errors) return tree_errors;
+    fe_errors |= get_program_code(tokens, &name_table, &program_tree, &token_index);
+    if (fe_errors) fe_error_output(fe_errors, token_index);
+    tree_dump(&program_tree);
+
+    op_delete_tree(&program_tree);
+    free(buffer);
 
     return fe_errors;
 }

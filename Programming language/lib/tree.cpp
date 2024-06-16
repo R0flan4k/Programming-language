@@ -5,16 +5,15 @@
 #include "file_processing.h"
 #include "strings.h"
 
-const char * TREE_DUMP_FILE_NAME = "../graphviz/tree_dump";
+const char * TREE_DUMP_FILE_NAME = "./graphviz/tree_dump";
 
 const size_t TRASH_VALUE = 0xAB1BA5;
 const size_t BUFFER_SIZE = 256;
 
-static size_t tree_free(TreeNode * main_node);
-static size_t tree_free_iternal(TreeNode * node, size_t * count);
+static size_t tree_free(TreeNode * * main_node);
+static size_t tree_free_iternal(TreeNode * * node, size_t * count);
 static void print_tree_nodes(const TreeNode * node, FILE * fp);
 static void print_tree_edges(const TreeNode * node, FILE * fp);
-static TError_t tree_create_node(Tree * tree, TreeNode * * node_ptr);
 static void print_text_nodes(const TreeNode * main_node);
 
 
@@ -117,7 +116,7 @@ TError_t tree_vtor(const Tree * tree)
 }
 
 
-static TError_t tree_create_node(Tree * tree, TreeNode * const parent_node, TreeNode * * node_ptr)
+TError_t tree_create_node(Tree * tree, TreeNode * const parent_node, TreeNode * * node_ptr)
 {
     MY_ASSERT(tree);
     MY_ASSERT(!*node_ptr);
@@ -285,8 +284,20 @@ static void print_tree_nodes(const TreeNode * node, FILE * fp)
 {
     MY_ASSERT(node);
 
-    fprintf(fp, "    node%p [ label = \"{[%p] " TREE_SPEC " | { <l> left[%p] | right[%p]  }}\" ]\n",
-            node, node, node->value, node->left, node->right);
+    fprintf(fp, "    node%p [ label = \"{[%p] ", node, node);
+    switch (node->value.type)
+    {
+        case TREE_NODE_TYPES_NUMBER:
+            fprintf(fp, "%.2lf ", node->value.val.num);
+            break;
+        case TREE_NODE_TYPES_STRING:
+            fprintf(fp, "%s ", node->value.val.string);
+            break;
+        default:
+            MY_ASSERT(0 && "UNREACHABLE");
+            break;
+    }
+    fprintf(fp, "| { <l> left[%p] | right[%p]  }}\" ]\n", node->left, node->right);
 
     if (node->right)
     {

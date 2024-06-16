@@ -13,6 +13,7 @@ KeyWord KEY_WORDS_ARRAY[] = {
     create_key_word("while",  len(sizeof("while")),  KEY_WORDS_WHILE),
     create_key_word("return", len(sizeof("return")), KEY_WORDS_RETURN),
     create_key_word("func",   len(sizeof("func")),   KEY_WORDS_FUNCTION_START),
+    create_key_word("void",   len(sizeof("void")),   KEY_WORDS_VOID),
 };
 size_t KEY_WORDS_ARRAY_SIZE = sizeof(KEY_WORDS_ARRAY) / sizeof(KEY_WORDS_ARRAY[0]);
 

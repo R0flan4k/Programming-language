@@ -1,6 +1,11 @@
-int abobus= 12;
-char
-;;
-() {
+func int лох (void)
+{
+    int aboba = 2;
 
+    if (aboba > 1)
+    {
+        aboba = 1;
+    }
+
+    return aboba ;
 }

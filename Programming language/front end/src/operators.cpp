@@ -12,6 +12,9 @@ Operator OPERATORS_ARRAY[] = {
     create_operator("^",  len(sizeof("^")),  OPERATORS_POWER),
     create_operator("=",  len(sizeof("=")),  OPERATORS_ASSIGMENT),
     create_operator(";",  len(sizeof(";")),  OPERATORS_END_OF_OP),
+    create_operator("<",  len(sizeof("<")),  OPERATORS_BELOW),
+    create_operator(">",  len(sizeof(">")),  OPERATORS_ABOVE),
+    create_operator("==", len(sizeof("==")), OPERATORS_EQUAL),
 };
 size_t OPERATORS_ARRAY_SIZE = sizeof(OPERATORS_ARRAY) / sizeof(OPERATORS_ARRAY[0]);
 

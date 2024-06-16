@@ -6,10 +6,56 @@
 #include "my_assert.h"
 
 const size_t MAX_STRING_SIZE = 128;
+const char * START_FUNCTION_NAME = "лох";
+const size_t START_FUNCTION_LEN = sizeof("lesgo") - 1;
+const char * FUNCTION_CALL_NODE_VALUE = "FuncCall";
+
+static FrontEndErrors get_all_functions(FrontEndToken * tokens, NameTable * name_table, size_t * token_index,
+                                        Tree * program_tree);
+static FrontEndErrors get_function(FrontEndToken * tokens, NameTable * name_table, size_t * token_index, 
+                                   Tree * program_tree, TreeNode * function_node);
+static FrontEndErrors get_func_args(FrontEndToken * tokens, NameTable * name_table, size_t * token_index,
+                                    Tree * program_tree, TreeNode * arg_node);
+static FrontEndErrors get_func_body(FrontEndToken * tokens, NameTable * name_table, size_t * token_index,
+                                    Tree * program_tree, TreeNode * body_node, bool * defined_vars);
+static FrontEndErrors get_ret(FrontEndToken * tokens, NameTable * name_table, size_t * token_index,
+                              Tree * program_tree, TreeNode * node, bool * defined_vars);
+static FrontEndErrors get_calc_op(FrontEndToken * tokens, NameTable * name_table, size_t * token_index,
+                                  Tree * program_tree, TreeNode * node, bool * defined_vars);
+static FrontEndErrors get_definition(FrontEndToken * tokens, NameTable * name_table, size_t * token_index,
+                                     Tree * program_tree, TreeNode * node, bool * defined_vars);
+static FrontEndErrors get_if(FrontEndToken * tokens, NameTable * name_table, size_t * token_index,
+                             Tree * program_tree, TreeNode * cur_node, bool * defined_vars);
+static FrontEndErrors get_expression(FrontEndToken * tokens, NameTable * name_table, size_t * token_index,
+                                     Tree * program_tree, TreeNode * exp_node, bool * defined_vars);
+static FrontEndErrors get_e(FrontEndToken * tokens, NameTable * name_table, size_t * token_index,
+                            Tree * program_tree, TreeNode * node, bool * defined_vars);
+static FrontEndErrors get_tp(FrontEndToken * tokens, NameTable * name_table, size_t * token_index,
+                             Tree * program_tree, TreeNode * node, bool * defined_vars);
+static FrontEndErrors get_p(FrontEndToken * tokens, NameTable * name_table, size_t * token_index,
+                            Tree * program_tree, TreeNode * node, bool * defined_vars);
+static FrontEndErrors get_n(FrontEndToken * tokens, NameTable * name_table, size_t * token_index,
+                            Tree * program_tree, TreeNode * node, bool * defined_vars);
+static FrontEndErrors get_func_call(FrontEndToken * tokens, NameTable * name_table, size_t * token_index,
+                                    Tree * program_tree, TreeNode * node, bool * defined_vars);
+static FrontEndErrors get_func_call_arg(FrontEndToken * tokens, NameTable * name_table, size_t * token_index,
+                                        Tree * program_tree, TreeNode * node, bool * defined_vars);
 
 static char * fe_next_token(char * buffer);
+static bool is_function(FrontEndToken * token);
+static bool is_data_type(FrontEndToken * token);
+static bool is_func_call(FrontEndToken * tokens, size_t token_index);
+static bool is_func_call_arg(FrontEndToken * token);
+static bool is_e_op(FrontEndToken * token);
+static bool is_tp_op(FrontEndToken * token);
+static bool is_ret(FrontEndToken * token);
+static bool is_calc_op(FrontEndToken * tokens, size_t token_index);
+static bool is_if(FrontEndToken * token);
 static bool is_operator(char * buffer, size_t * index);
 static bool is_key_word(char * buffer, size_t * index);
+static bool is_spec_symbol(char symbol);
+static bool is_comprassion_op(FrontEndToken * token);
+static void tok_dump(FrontEndToken * token);
 
 
 FrontEndErrors separate_tokens(char * buffer, FrontEndToken * tokens, size_t max_tokens_number,
@@ -44,7 +90,7 @@ FrontEndErrors separate_tokens(char * buffer, FrontEndToken * tokens, size_t max
 
             buffer_ptr += length;
         }
-        else if (is_braket(*buffer_ptr))
+        else if (is_spec_symbol(*buffer_ptr))
         {
             tokens[index].type = TOKEN_TYPES_SYMBOL;
             tokens[index].val.sym = *buffer_ptr;
@@ -71,8 +117,6 @@ FrontEndErrors separate_tokens(char * buffer, FrontEndToken * tokens, size_t max
 
             if (!isspace(*(buffer_ptr + length)))
             {
-                printf("%d %c\n", *(buffer_ptr + length), *(buffer_ptr + length));
-                printf("%c %d\n", *buffer_ptr, length);
                 fe_errors |= FRONT_END_ERRORS_CANT_SEPARATE_NAME_TABLE_ELEM;
                 return fe_errors;
             }
@@ -89,7 +133,7 @@ FrontEndErrors separate_tokens(char * buffer, FrontEndToken * tokens, size_t max
             }
 
             tokens[index].type = TOKEN_TYPES_NAME_TABLE_ELEM;
-            tokens[index].val.elem = name_table->names[arrays_index];
+            tokens[index].val.elem_id = arrays_index;
 
             buffer_ptr += length + 1;
         }
@@ -106,17 +150,17 @@ FrontEndErrors separate_tokens(char * buffer, FrontEndToken * tokens, size_t max
 }
 
 
-FrontEndErrors get_program_code(FrontEndToken * tokens, NameTable * name_table, Tree * program_tree)
+FrontEndErrors get_program_code(FrontEndToken * tokens, NameTable * name_table, Tree * program_tree,
+                                size_t * token_index)
 {
     MY_ASSERT(tokens);
     MY_ASSERT(name_table);
 
-    size_t token_index = 0;
+    FrontEndErrors fe_errors = get_all_functions(tokens, name_table, token_index, program_tree);
+    if (fe_errors) return fe_errors;
 
-    FrontEndErrors fe_errors = get_all_functions(tokens, name_table, &token_index);
-
-    if (tokens[token_index].type != TOKEN_TYPES_TERMINATOR ||
-        tokens[token_index].val.sym != '\0')
+    if (tokens[*token_index].type != TOKEN_TYPES_TERMINATOR ||
+        tokens[*token_index].val.sym != '\0')
     {
         fe_errors |= FRONT_END_ERRORS_CANT_FIND_TERMINATOR;
     }
@@ -125,280 +169,766 @@ FrontEndErrors get_program_code(FrontEndToken * tokens, NameTable * name_table, 
 }
 
 
-static FrontEndErrors get_all_functions(FrontEndToken * tokens, NameTable * name_table,
-                                        size_t * token_index, Tree * program_tree)
-{
-    MY_ASSERT(tokens);
-    MY_ASSERT(name_table);
-    MY_ASSERT(token_index);
-
-    if (!is_function(tokens, name_table, token_index))
-    {
-        return FRONT_END_ERRORS_NO_FUNCTIONS;
-    }
-
-    FrontEndErrors fe_errors = get_function(tokens, name_table, token_index,
-                                            program_tree, &(program_tree->root));
-    TreeNode * * cur_node = &(program_tree->root->right);
-
-    if (fe_errors)
-    {
-        return fe_errors;
-    }
-
-    while (is_function(tokens, name_table, token_index))
-    {
-        fe_errors |= get_function(tokens, name_table, token_index,
-                                  program_tree, cur_node);
-        cur_node = &((*cur_node)->right);
-
-        if (fe_errors)
-        {
-            return fe_errors;
-        }
-    }
-
-    return fe_errors;
-}
-
-
-static bool is_function(FrontEndToken * tokens, NameTable * name_table, size_t * token_index)
-{
-    MY_ASSERT(tokens);
-    MY_ASSERT(name_table);
-    MY_ASSERT(token_index);
-
-    if (tokens[*token_index].type == TOKEN_TYPES_KEY_WORD &&
-        tokens[*token_index].val.kwd.id == KEY_WORDS_FUNCTION_START)
-    {
-        (*token_index)++;
-        return true;
-    }
-
-    return false;
-}
-
-
-static FrontEndErrors get_function(FrontEndToken * tokens, NameTable * name_table, size_t * token_index,
-                                   Tree * program_tree, TreeNode * * func_root)
-{
-    MY_ASSERT(tokens);
-    MY_ASSERT(name_table);
-    MY_ASSERT(token_index);
-
-    FrontEndErrors fe_errors = 0;
-
-    (*token_index)++;
-
-    const char * return_type = NULL;
-    fe_errors |= get_type(tokens, token_index, return_type);
-
-    if (fe_errors)
-    {
-        return fe_errors;
-    }
-
-    if (tokens[*token_index].type != TOKEN_TYPES_NAME_TABLE_ELEM)
-    {
-        fe_errors |= FRONT_END_ERRORS_INVALID_FUNCTION_NAME;
-        return fe_errors;
-    }
-
-    Tree tmp_tree = {};
-
-    Tree_t root_value = {.val = {.string = tokens[*token_index].val.elem.name},
-                         .type = TREE_NODE_TYPES_STRING};
-    TError_t tree_errors = op_new_tree(&tmp_tree, root_value);
-
-    Tree_t left_value = {.val = {.string = return_type},
-                         .type = TREE_NODE_TYPES_STRING};
-    tree_errors |= tree_insert(&tmp_tree, tmp_tree.root, TREE_NODE_BRANCH_LEFT, left_value);
-
-    (*token_index)++;
-
-    #if 0
-    if (tokens[*token_index].type != TOKEN_TYPES_SYMBOL ||
-        tokens[*token_index].val.sym != '(')
-    {
-        error check
-    }
-    #endif
-
-    (*token_index)++;
-    const char * argument_type = NULL;
-    TreeNode * cur_node = tmp_tree.root->left;
-
-    while (tokens[*token_index].type == TOKEN_TYPES_KEY_WORD)
-    {
-        MY_ASSERT(!cur_node);
-
-        fe_errors |= get_type(tokens, token_index, argument_type);
-        left_value = {.val = {.string = argument_type},
-                      .type = TREE_NODE_TYPES_STRING};
-        tree_errors |= tree_insert(&tmp_tree, cur_node, TREE_NODE_BRANCH_LEFT, left_value);
-
-        left_value = {.val = {.string = tokens[*token_index].val.elem.name},
-                      .type = TREE_NODE_TYPES_STRING};
-        (*token_index)++;
-        tree_errors |= tree_insert(&tmp_tree, cur_node->left, TREE_NODE_BRANCH_RIGHT, left_value);
-
-        cur_node = cur_node->left;
-    }
-
-    #if 0
-    if (tokens[*token_index].type != TOKEN_TYPES_SYMBOL ||
-        tokens[*token_index].val.sym != ')')
-    {
-        error check
-    }
-    #endif
-
-    (*token_index)++;
-
-    #if 0
-    if (tokens[*token_index].type != TOKEN_TYPES_SYMBOL ||
-        tokens[*token_index].val.sym != '{')
-    {
-        error check
-    }
-    #endif
-
-    (*token_index)++;
-
-    fe_errors |= get_operator(tokens, name_table, token_index,
-                              &tmp_tree, tmp_tree.root->left->right);
-
-    if (fe_errors)
-        return fe_errors;
-
-    #if 0
-    cycle get operator
-    #endif
-
-    #if 0
-    if (tokens[*token_index].type != TOKEN_TYPES_SYMBOL ||
-        tokens[*token_index].val.sym != '}')
-    {
-        error check
-    }
-    #endif
-
-    #if 0
-    copy branch from tmp_tree to func root
-    #endif
-
-    (*token_index)++;
-
-    return fe_errors;
-}
-
-
-static FrontEndErrors get_operator(FrontEndToken * tokens, NameTable * name_table, size_t * token_index,
-                                   Tree * operator_tree, TreeNode * * operator_root)
+static FrontEndErrors get_all_functions(FrontEndToken * tokens, NameTable * name_table, size_t * token_index,
+                                        Tree * program_tree)
 {
     MY_ASSERT(tokens);
     MY_ASSERT(name_table);
     MY_ASSERT(token_index);
     MY_ASSERT(program_tree);
-    MY_ASSERT(body_root);
-    MY_ASSERT(!(*body_root));
+
+    if (!is_function(tokens + *token_index))
+    {
+        return FRONT_END_ERRORS_NO_FUNCTIONS;
+    }
+    (*token_index)++;
+
+    TreeNode * cur_func_node = program_tree->root;
+    FrontEndErrors fe_errors = get_function(tokens, name_table, token_index,
+                                            program_tree, cur_func_node);
+    if (cur_func_node) cur_func_node = cur_func_node->right;
+
+    while (is_function(tokens + *token_index))
+    {
+        (*token_index)++;
+        fe_errors |= get_function(tokens, name_table, token_index,
+                                  program_tree, cur_func_node);
+        if (cur_func_node) cur_func_node = cur_func_node->right;
+    }
+
+    return fe_errors;
+}
+
+
+static bool is_function(FrontEndToken * token)
+{
+    MY_ASSERT(token);
+
+    return token->type == TOKEN_TYPES_KEY_WORD &&
+           token->val.kwd.id == KEY_WORDS_FUNCTION_START;
+}
+
+
+static FrontEndErrors get_function(FrontEndToken * tokens, NameTable * name_table, size_t * token_index, 
+                                   Tree * program_tree, TreeNode * function_node)
+{
+    MY_ASSERT(tokens);
+    MY_ASSERT(name_table);
+    MY_ASSERT(program_tree);
+    MY_ASSERT(token_index);
+    MY_ASSERT(function_node);
 
     FrontEndErrors fe_errors = 0;
-    TError_t tree_errors = 0;
-    Tree_t operator_node_value = {};
-    Tree tmp_tree = {};
-
-    bool is_if_var = false, is_while_var = false, is_return_var = false;
-
-    if (!(is_if_var = is_if(tokens, token_index)) && !(is_while_var = is_while(tokens, token_index)) &&
-        !(is_return_var = is_return(tokens, token_index)))
+    if (!is_data_type(tokens + *token_index))
+        return FRONT_END_ERRORS_DATA_TYPE_EXPECTED;
+    FrontEndToken ret_data_type = tokens[(*token_index)++];
+    
+    if (tokens[*token_index].type != TOKEN_TYPES_NAME_TABLE_ELEM)
     {
-        fe_errors |= get_statement(tokens, name_table, token_index, &tmp_tree);
+        return fe_errors | FRONT_END_ERRORS_INVALID_FUNCTION_NAME;
     }
-    else if
+
+    TError_t tree_errors = 0;
+    NameTableElemId nt_elem_id = tokens[*token_index].val.elem_id;             
+    if (!strncmp(name_table->names[nt_elem_id].name, START_FUNCTION_NAME,
+                 name_table->names[nt_elem_id].length))
     {
-        operator_node_value = {.val = {.string = tokens[*token_index].var.kwd.name},
-                               .type = TREE_NODE_TYPES_STRING};
-        tree_errors |= op_new_tree(&tmp_tree, operator_node_value);
+        function_node = program_tree->root;
+    }
+    else
+    {
+        function_node = function_node->right;
+        tree_errors |= tree_create_node(program_tree, function_node, &(function_node->right));
+    }
+    if (tree_errors) return fe_errors | FRONT_END_ERRORS_TREE_ERROR;
+
+    TreeNode * * ret_node = &(function_node->left);
+    function_node->value.val.string = name_table->names[nt_elem_id].name;
+    function_node->value.type = TREE_NODE_TYPES_STRING;
+    (*token_index)++;
+    if (tree_create_node(program_tree, function_node, ret_node))
+        return fe_errors | FRONT_END_ERRORS_TREE_ERROR;
+    (*ret_node)->value.val.string = ret_data_type.val.kwd.name;
+    (*ret_node)->value.type = TREE_NODE_TYPES_STRING;
+
+    TreeNode * * args_node = &((*ret_node)->left);
+    if (tree_create_node(program_tree, *ret_node, args_node))
+        return fe_errors | FRONT_END_ERRORS_TREE_ERROR;
+
+    fe_errors |= get_func_args(tokens, name_table, token_index,
+                               program_tree, *args_node);
+    if (fe_errors) return fe_errors;
+
+    TreeNode * * body_node = &((*ret_node)->right);
+    bool defined_vars[NAME_TABLE_CAPACITY] = {};
+    if (tree_create_node(program_tree, *ret_node, body_node))
+        return fe_errors | FRONT_END_ERRORS_TREE_ERROR;
+    fe_errors |= get_func_body(tokens, name_table, token_index,
+                               program_tree, *body_node, defined_vars);
+
+    return fe_errors;
+}
+
+
+static bool is_data_type(FrontEndToken * token)
+{
+    MY_ASSERT(token);
+
+    return token->type == TOKEN_TYPES_KEY_WORD &&
+          (token->val.kwd.id == KEY_WORDS_BOOL ||
+           token->val.kwd.id == KEY_WORDS_VOID ||
+           token->val.kwd.id == KEY_WORDS_CHAR ||
+           token->val.kwd.id == KEY_WORDS_INT  ||
+           token->val.kwd.id == KEY_WORDS_DOUBLE);
+}
+
+
+static FrontEndErrors get_func_args(FrontEndToken * tokens, NameTable * name_table, size_t * token_index,
+                                    Tree * program_tree, TreeNode * arg_node)
+{
+    MY_ASSERT(tokens);
+    MY_ASSERT(name_table);
+    MY_ASSERT(token_index);
+    MY_ASSERT(program_tree);
+    MY_ASSERT(arg_node);
+
+    if (tokens[*token_index].type != TOKEN_TYPES_SYMBOL ||
+        tokens[*token_index].val.sym != '(')
+    {
+        return FRONT_END_ERRORS_NO_OPEN_BRAKET;
+    }
+    (*token_index)++;
+    
+    if (!is_data_type(tokens + *token_index))
+        return FRONT_END_ERRORS_DATA_TYPE_EXPECTED;
+    arg_node->value.type = TREE_NODE_TYPES_STRING;
+    arg_node->value.val.string = tokens[*token_index].val.kwd.name;
+    (*token_index)++;
+
+    FrontEndErrors fe_errors = 0;
+    if (tokens[*token_index].type == TOKEN_TYPES_NAME_TABLE_ELEM)
+    {
+        TreeNode * * arg_name_node = &(arg_node->right);
+        if (tree_create_node(program_tree, arg_node, arg_name_node))
+            return fe_errors | FRONT_END_ERRORS_TREE_ERROR;
+        NameTableElemId nt_elem_id = tokens[*token_index].val.elem_id;
+        (*arg_name_node)->value.type = TREE_NODE_TYPES_STRING;
+        (*arg_name_node)->value.val.string = name_table->names[nt_elem_id].name; 
         (*token_index)++;
     }
+    
+    if (tokens[*token_index].type == TOKEN_TYPES_SYMBOL &&
+        tokens[*token_index].val.sym == ',')
+    {
+        (*token_index)++;
+        TreeNode * * new_arg_node = &(arg_node->left);
+        if (tree_create_node(program_tree, arg_node, new_arg_node))
+            return fe_errors | FRONT_END_ERRORS_TREE_ERROR;
+        fe_errors |= get_func_args(tokens, name_table, token_index,
+                                   program_tree, *new_arg_node);
+    }
 
-    if (is_if_var)
-        fe_errors |= get_if(tokens, name_table, token_index, &tmp_tree);
-    else if (is_while_var)
-        fe_errors |= get_while(tokens, name_table, token_index, &tmp_tree);
-    else if (is_return_var)
-        fe_errors |= get_return(tokens, name_table, token_index, &tmp_tree);
+    if (tokens[*token_index].type != TOKEN_TYPES_SYMBOL ||
+        tokens[*token_index].val.sym != ')')
+    {
+        fe_errors |= FRONT_END_ERRORS_NO_CLOSE_BRAKET;
+    }
+    (*token_index)++;
+
+    return fe_errors;
+}
+
+
+static FrontEndErrors get_func_body(FrontEndToken * tokens, NameTable * name_table, size_t * token_index,
+                                    Tree * program_tree, TreeNode * body_node, bool * defined_vars)
+{
+    MY_ASSERT(tokens);
+    MY_ASSERT(name_table);
+    MY_ASSERT(token_index);
+    MY_ASSERT(program_tree);
+    MY_ASSERT(body_node);
+    MY_ASSERT(defined_vars);
+
+    if (tokens[*token_index].type != TOKEN_TYPES_SYMBOL ||
+        tokens[*token_index].val.sym != '{')
+    {
+        return FRONT_END_ERRORS_INVALID_BODY_CONSTRUCTION;
+    }
+    (*token_index)++;
+
+    TreeNode * cur_node = body_node;
+    bool defined_local_vars[NAME_TABLE_CAPACITY] = {};
+    for (size_t i = 0; i < NAME_TABLE_CAPACITY; i++)
+        defined_local_vars[i] = defined_vars[i];
+
+    FrontEndErrors fe_errors = 0;
+    bool is_op = true;
+    while (is_op)
+    {
+        is_op = false;
+
+        if (is_if(tokens + *token_index))
+        {
+            fe_errors |= get_if(tokens, name_table, token_index,
+                                program_tree, cur_node, defined_local_vars);
+            is_op = true;
+        }
+        else if (is_ret(tokens + *token_index))
+        {
+            fe_errors |= get_ret(tokens, name_table, token_index,
+                                 program_tree, cur_node, defined_local_vars);
+            is_op = true;
+        }
+        else if (is_calc_op(tokens, *token_index))
+        {
+            fe_errors |= get_calc_op(tokens, name_table, token_index, 
+                                     program_tree, cur_node, defined_local_vars);
+            is_op = true;
+        }
+
+        if (is_op)
+        {
+            TreeNode * * next_op_node = &(cur_node->right);
+            if (tree_create_node(program_tree, cur_node, next_op_node))
+                fe_errors |= FRONT_END_ERRORS_TREE_ERROR;
+            cur_node = *next_op_node;
+        }
+
+        if (fe_errors) return fe_errors;
+    }
+    cur_node->value.type = TREE_NODE_TYPES_STRING;
+    cur_node->value.val.string = "END OF BODY";
+
+    if (tokens[*token_index].type != TOKEN_TYPES_SYMBOL ||
+        tokens[*token_index].val.sym != '}')
+    {
+        fe_errors |= FRONT_END_ERRORS_INVALID_BODY_CONSTRUCTION;
+    }
+    (*token_index)++;
+
+    return fe_errors;
+}
+
+
+static FrontEndErrors get_ret(FrontEndToken * tokens, NameTable * name_table, size_t * token_index,
+                              Tree * program_tree, TreeNode * node, bool * defined_vars)
+{
+    MY_ASSERT(tokens);
+    MY_ASSERT(name_table);
+    MY_ASSERT(token_index);
+    MY_ASSERT(program_tree);
+    MY_ASSERT(node);
+    MY_ASSERT(defined_vars);
+
+    node->value.type = TREE_NODE_TYPES_STRING;
+    node->value.val.string  = ";";
+
+    TreeNode * * ret_node = &(node->left);
+    if (tree_create_node(program_tree, node, ret_node))
+        return FRONT_END_ERRORS_TREE_ERROR;
+    (*ret_node)->value.type = TREE_NODE_TYPES_STRING;
+    (*ret_node)->value.val.string = tokens[(*token_index)++].val.kwd.name;
+
+    TreeNode * * ret_val_node = &((*ret_node)->left);
+    if (tree_create_node(program_tree, *ret_node, ret_val_node))
+        return FRONT_END_ERRORS_TREE_ERROR;
+    FrontEndErrors fe_errors = get_expression(tokens, name_table, token_index,
+                                              program_tree, *ret_val_node, defined_vars);
+    if (fe_errors) return fe_errors;
+
+    if (tokens[*token_index].type != TOKEN_TYPES_OPERATOR ||
+        tokens[*token_index].val.op.id != OPERATORS_END_OF_OP)
+        return FRONT_END_ERRORS_END_OF_OP_EXPECTED;
+    
+    (*token_index)++;
+    return fe_errors;
+}
+
+
+static FrontEndErrors get_calc_op(FrontEndToken * tokens, NameTable * name_table, size_t * token_index,
+                                  Tree * program_tree, TreeNode * node, bool * defined_vars)
+{
+    MY_ASSERT(tokens);
+    MY_ASSERT(name_table);
+    MY_ASSERT(token_index);
+    MY_ASSERT(program_tree);
+    MY_ASSERT(node);
+    MY_ASSERT(defined_vars);
+
+    node->value.type = TREE_NODE_TYPES_STRING;
+    node->value.val.string  = ";";
+
+    TreeNode * * calc_node = &(node->left);
+    if (tree_create_node(program_tree, node, calc_node))
+        return FRONT_END_ERRORS_TREE_ERROR;
+
+    FrontEndErrors fe_errors = 0;
+    if (is_data_type(tokens + *token_index))
+    {
+        fe_errors |= get_definition(tokens, name_table, token_index,
+                                    program_tree, *calc_node, defined_vars);
+    }
     else
-        MY_ASSERT(0 && "UNREACHABLE");
+    {
+        fe_errors |= get_expression(tokens, name_table, token_index,
+                                    program_tree, *calc_node, defined_vars);
+    }
+
+    if (tokens[*token_index].type != TOKEN_TYPES_OPERATOR ||
+        tokens[*token_index].val.op.id != OPERATORS_END_OF_OP)
+        fe_errors |= FRONT_END_ERRORS_END_OF_OP_EXPECTED;
+    (*token_index)++;
+
+    return fe_errors;
 
     #if 0
-    copy branch to operator tree from tmp_tree
+        1. Dobavit funkcii v get_expression();      -> DONE (vrode bi -_-)
+        2. get_definition;                          -> DONE
+        3. check na ";" v get_calc_op();            -> DONE
+
+        4. Pomenyat kwd i op na kwd_id i op_id
+        5. Kringe structures names
+        6. Poyzhe ekran
+        7. Obyavleniya funkciy
+        8. Kringe no const { } ( ) , 
     #endif
 }
 
 
-static bool is_while(FrontEndToken * tokens, size_t * token_index)
-{
-    if (tokens[*token_index].type == TOKEN_TYPES_KEY_WORD &&
-        tokens[*token_index].val.kwd.id == KEY_WORDS_WHILE)
-    {
-        return true;
-    }
-
-    return false;
-}
-
-
-static bool is_if(FrontEndToken * tokens, size_t * token_index)
-{
-    if (tokens[*token_index].type == TOKEN_TYPES_KEY_WORD &&
-        tokens[*token_index].val.kwd.id == KEY_WORDS_IF)
-    {
-        return true;
-    }
-
-    return false;
-}
-
-
-static bool is_return(FrontEndToken * tokens, size_t * token_index)
-{
-    if (tokens[*token_index].type == TOKEN_TYPES_KEY_WORD &&
-        tokens[*token_index].val.kwd.id == KEY_WORDS_RETURN)
-    {
-        return true;
-    }
-
-    return false;
-}
-
-
-static FrontEndErrors get_type(FrontEndToken * tokens, size_t * token_index,
-                               const char * type_str)
+static FrontEndErrors get_definition(FrontEndToken * tokens, NameTable * name_table, size_t * token_index,
+                                     Tree * program_tree, TreeNode * node, bool * defined_vars)
 {
     MY_ASSERT(tokens);
+    MY_ASSERT(name_table);
     MY_ASSERT(token_index);
-    MY_ASSERT(type_str);
+    MY_ASSERT(program_tree);
+    MY_ASSERT(node);
+    MY_ASSERT(defined_vars);
 
-    FrontEndErrors fe_errors = 0;
+    node->value.type = TREE_NODE_TYPES_STRING;
+    node->value.val.string = tokens[(*token_index)++].val.kwd.name;
 
-    if (tokens[*token_index].type != TOKEN_TYPES_KEY_WORD)
+    NameTableElemId nt_elem_id = tokens[*token_index].val.elem_id;
+    if (tokens[*token_index].type != TOKEN_TYPES_NAME_TABLE_ELEM ||
+        defined_vars[nt_elem_id])
+        return FRONT_END_ERRORS_INVALID_VAR_NAME;
+    (*token_index)++;
+    
+    TreeNode * * name_node = &(node->left);
+    if (tree_create_node(program_tree, node, name_node))
+        return FRONT_END_ERRORS_TREE_ERROR;
+    (*name_node)->value.type = TREE_NODE_TYPES_STRING;
+    (*name_node)->value.val.string = name_table->names[nt_elem_id].name;
+    defined_vars[nt_elem_id] = true;
+
+    if (tokens[*token_index].type != TOKEN_TYPES_OPERATOR ||
+        tokens[*token_index].val.op.id != OPERATORS_ASSIGMENT)
     {
-        fe_errors |= FRONT_END_ERRORS_INVALID_RETURN_TYPE;
-        return fe_errors;
+        return FRONT_END_ERRORS_DEFINITION_EXPECTED;
     }
-
-    type_str = tokens[*token_index].val.kwd.name;
     (*token_index)++;
 
-    while (tokens[*token_index].type == TOKEN_TYPES_KEY_WORD)
+    TreeNode * * val_node = &(node->right);
+    if (tree_create_node(program_tree, node, val_node))
+        return FRONT_END_ERRORS_TREE_ERROR;
+    return get_expression(tokens, name_table, token_index,
+                          program_tree, *val_node, defined_vars);
+}
+
+
+static FrontEndErrors get_if(FrontEndToken * tokens, NameTable * name_table, size_t * token_index,
+                             Tree * program_tree, TreeNode * cur_node, bool * defined_vars)
+{
+    MY_ASSERT(tokens);
+    MY_ASSERT(name_table);
+    MY_ASSERT(token_index);
+    MY_ASSERT(program_tree);
+    MY_ASSERT(cur_node);
+    MY_ASSERT(defined_vars);
+
+    cur_node->value.type = TREE_NODE_TYPES_STRING;
+    cur_node->value.val.string  = ";";
+
+    TreeNode * * if_node = &(cur_node->left);
+    if (tree_create_node(program_tree, cur_node, if_node))
+        return FRONT_END_ERRORS_TREE_ERROR;
+    (*if_node)->value.type = TREE_NODE_TYPES_STRING;
+    (*if_node)->value.val.string = tokens[(*token_index)++].val.kwd.name;
+
+    TreeNode * * condition_node = &((*if_node)->left);
+    if (tree_create_node(program_tree, *if_node, condition_node))
+        return FRONT_END_ERRORS_TREE_ERROR;
+    
+    if (tokens[*token_index].type != TOKEN_TYPES_SYMBOL ||
+        tokens[*token_index].val.sym != '(')
+        return FRONT_END_ERRORS_NO_OPEN_BRAKET;
+    (*token_index)++;
+    FrontEndErrors fe_errors = get_expression(tokens, name_table, token_index,
+                                              program_tree, *condition_node, defined_vars);
+    if (tokens[*token_index].type != TOKEN_TYPES_SYMBOL ||
+        tokens[*token_index].val.sym != ')')
+        return FRONT_END_ERRORS_NO_OPEN_BRAKET;
+    (*token_index)++;
+
+    TreeNode * * body_node = &((*if_node)->right);
+    if (tree_create_node(program_tree, *if_node, body_node))
+        return FRONT_END_ERRORS_TREE_ERROR;
+    fe_errors |= get_func_body(tokens, name_table, token_index,
+                                program_tree, *body_node, defined_vars);
+
+    return fe_errors;
+}
+
+
+static FrontEndErrors get_expression(FrontEndToken * tokens, NameTable * name_table, size_t * token_index,
+                                     Tree * program_tree, TreeNode * exp_node, bool * defined_vars)
+{
+    MY_ASSERT(tokens);
+    MY_ASSERT(name_table);
+    MY_ASSERT(token_index);
+    MY_ASSERT(program_tree);
+    MY_ASSERT(exp_node);
+    MY_ASSERT(defined_vars);
+
+    TreeNode * left_part_node = NULL;
+    if (tree_create_node(program_tree, NULL, &left_part_node))
+        return FRONT_END_ERRORS_TREE_ERROR;
+    FrontEndErrors fe_errors = get_e(tokens, name_table, token_index,
+                                     program_tree, left_part_node, defined_vars);
+    
+    if (is_comprassion_op(tokens + *token_index))
     {
-        delete_terminator(const_cast <char *> (type_str));
-        (*token_index)++;
+        exp_node->value.type = TREE_NODE_TYPES_STRING;
+        exp_node->value.val.string = tokens[(*token_index)++].val.op.value;
+        exp_node->left = left_part_node;
+        left_part_node->parent = exp_node;
+
+        TreeNode * * right_part_node = &(exp_node->right);
+        if (tree_create_node(program_tree, exp_node, right_part_node))
+            return fe_errors | FRONT_END_ERRORS_TREE_ERROR;
+        fe_errors |= get_e(tokens, name_table, token_index,
+                           program_tree, *right_part_node, defined_vars);
+    }
+    else
+    {
+        exp_node->value = left_part_node->value;
+        exp_node->right = left_part_node->right;
+        exp_node->left  = left_part_node->left;
+        free(left_part_node);
     }
 
     return fe_errors;
+}
+
+
+static FrontEndErrors get_e(FrontEndToken * tokens, NameTable * name_table, size_t * token_index,
+                            Tree * program_tree, TreeNode * node, bool * defined_vars)
+{
+    MY_ASSERT(tokens);
+    MY_ASSERT(name_table);
+    MY_ASSERT(token_index);
+    MY_ASSERT(program_tree);
+    MY_ASSERT(node);
+    MY_ASSERT(defined_vars);
+
+    TreeNode * left_node = NULL;
+    if (tree_create_node(program_tree, NULL, &left_node))
+        return FRONT_END_ERRORS_TREE_ERROR;
+    FrontEndErrors fe_errors = get_tp(tokens, name_table, token_index,
+                                      program_tree, left_node, defined_vars);
+
+    bool no_e_op = true;
+    while (is_e_op(tokens + *token_index))
+    {
+        node->value.type = TREE_NODE_TYPES_STRING;
+        node->value.val.string  = tokens[(*token_index)++].val.op.value;
+        node->left = left_node;
+        left_node->parent = node;
+
+        TreeNode * * right_node = &(node->right);
+        if (tree_create_node(program_tree, node, right_node))
+            return fe_errors | FRONT_END_ERRORS_TREE_ERROR;
+        fe_errors |= get_e(tokens, name_table, token_index,
+                           program_tree, *right_node, defined_vars);
+
+        no_e_op = false;
+    }
+
+    if (no_e_op)
+    {
+        node->value = left_node->value;
+        node->right = left_node->right;
+        node->left  = left_node->left;
+        free(left_node); 
+    }
+
+    return fe_errors;
+}
+
+
+static FrontEndErrors get_tp(FrontEndToken * tokens, NameTable * name_table, size_t * token_index,
+                             Tree * program_tree, TreeNode * node, bool * defined_vars)
+{
+    MY_ASSERT(tokens);
+    MY_ASSERT(name_table);
+    MY_ASSERT(token_index);
+    MY_ASSERT(program_tree);
+    MY_ASSERT(node);
+    MY_ASSERT(defined_vars);
+
+    TreeNode * left_node = NULL;
+    if (tree_create_node(program_tree, NULL, &left_node))
+        return FRONT_END_ERRORS_TREE_ERROR;
+    FrontEndErrors fe_errors = get_p(tokens, name_table, token_index,
+                                     program_tree, left_node, defined_vars);
+
+    bool no_tp_op = true;
+    while (is_tp_op(tokens + *token_index))
+    {
+        node->value.type = TREE_NODE_TYPES_STRING;
+        node->value.val.string  = tokens[(*token_index)++].val.op.value;
+        node->left = left_node;
+        left_node->parent = node;
+
+        TreeNode * * right_node = &(node->right);
+        if (tree_create_node(program_tree, node, right_node))
+            return fe_errors | FRONT_END_ERRORS_TREE_ERROR;
+        fe_errors |= get_tp(tokens, name_table, token_index,
+                           program_tree, *right_node, defined_vars);
+
+        no_tp_op = false;
+    }
+
+    if (no_tp_op)
+    {
+        node->value = left_node->value;
+        node->right = left_node->right;
+        node->left  = left_node->left;
+        free(left_node); 
+    }
+
+    return fe_errors;
+}
+
+
+static FrontEndErrors get_p(FrontEndToken * tokens, NameTable * name_table, size_t * token_index,
+                            Tree * program_tree, TreeNode * node, bool * defined_vars)
+{
+    MY_ASSERT(tokens);
+    MY_ASSERT(name_table);
+    MY_ASSERT(token_index);
+    MY_ASSERT(program_tree);
+    MY_ASSERT(node);
+    MY_ASSERT(defined_vars);
+
+    if (tokens[*token_index].type == TOKEN_TYPES_SYMBOL &&  
+        tokens[*token_index].val.sym == '(')
+    {
+        (*token_index)++;
+        FrontEndErrors fe_errors = get_e(tokens, name_table, token_index,
+                                         program_tree, node, defined_vars);
+
+        if (tokens[*token_index].type != TOKEN_TYPES_SYMBOL ||
+            tokens[*token_index].val.sym != ')')
+            fe_errors |= FRONT_END_ERRORS_NO_CLOSE_BRAKET;
+        
+        (*token_index)++;
+        return fe_errors;
+    }
+
+    return get_n(tokens, name_table, token_index,
+                 program_tree, node, defined_vars);
+}
+
+
+static FrontEndErrors get_n(FrontEndToken * tokens, NameTable * name_table, size_t * token_index,
+                            Tree * program_tree, TreeNode * node, bool * defined_vars)
+{
+    MY_ASSERT(tokens);
+    MY_ASSERT(name_table);
+    MY_ASSERT(token_index);
+    MY_ASSERT(program_tree);
+    MY_ASSERT(node);
+    MY_ASSERT(defined_vars);
+
+    if (tokens[*token_index].type == TOKEN_TYPES_NUMBER)
+    {
+        node->value.type = TREE_NODE_TYPES_NUMBER;
+        node->value.val.num = tokens[(*token_index)++].val.num;
+        return 0;
+    }
+    else if (is_func_call(tokens,  *token_index))
+    {
+        return get_func_call(tokens, name_table, token_index,
+                             program_tree, node, defined_vars);
+    }
+    else if (tokens[*token_index].type == TOKEN_TYPES_NAME_TABLE_ELEM)
+    {   
+        node->value.type = TREE_NODE_TYPES_STRING;
+        NameTableElemId nt_elem_id = tokens[(*token_index)++].val.elem_id;
+        node->value.val.string = name_table->names[nt_elem_id].name;
+
+        if (!defined_vars[nt_elem_id])
+            return FRONT_END_ERRORS_UNDEFINED_VAR;
+
+        return 0;
+    }
+    
+    return FRONT_END_ERRORS_EXPRESSION_EXPECTED;
+}
+
+
+static FrontEndErrors get_func_call(FrontEndToken * tokens, NameTable * name_table, size_t * token_index,
+                                    Tree * program_tree, TreeNode * node, bool * defined_vars)
+{
+    MY_ASSERT(tokens);
+    MY_ASSERT(name_table);
+    MY_ASSERT(token_index);
+    MY_ASSERT(program_tree);
+    MY_ASSERT(node);
+    MY_ASSERT(defined_vars);
+
+    node->value.type = TREE_NODE_TYPES_STRING;
+    node->value.val.string = FUNCTION_CALL_NODE_VALUE;
+
+    TreeNode * * function_name = &(node->left);
+    if (tree_create_node(program_tree, node, function_name))
+        return FRONT_END_ERRORS_TREE_ERROR;
+    (*function_name)->value.type = TREE_NODE_TYPES_STRING;
+    NameTableElemId nt_elem_id = tokens[(*token_index)++].val.elem_id;
+    (*function_name)->value.val.string = name_table->names[nt_elem_id].name;
+
+    (*token_index)++;
+    FrontEndErrors fe_errors = 0;
+    if (is_func_call_arg(tokens + *token_index))
+    {
+        TreeNode * * func_call_args = &(node->right);
+        if (tree_create_node(program_tree, node, func_call_args))
+            return FRONT_END_ERRORS_TREE_ERROR;
+        fe_errors |= get_func_call_arg(tokens, name_table, token_index,
+                                       program_tree, *func_call_args, defined_vars);
+
+        while (tokens[*token_index].type == TOKEN_TYPES_SYMBOL &&
+               tokens[*token_index].val.sym == ',')
+        {
+            (*token_index)++;
+            if (!is_func_call_arg(tokens + *token_index))
+                return fe_errors | FRONT_END_ERRORS_INVALID_ARGUMENT;
+
+            TreeNode * * cur_node = &((*func_call_args)->right);
+            if (tree_create_node(program_tree, *func_call_args, cur_node))
+                return FRONT_END_ERRORS_TREE_ERROR;
+            fe_errors |= get_func_call_arg(tokens, name_table, token_index,
+                                           program_tree, *cur_node, defined_vars);
+            func_call_args = cur_node;
+        }
+    }
+
+    if (tokens[*token_index].type != TOKEN_TYPES_SYMBOL ||
+        tokens[*token_index].val.sym != ')')
+        fe_errors |= FRONT_END_ERRORS_NO_CLOSE_BRAKET;
+
+    return fe_errors;
+}
+
+
+static FrontEndErrors get_func_call_arg(FrontEndToken * tokens, NameTable * name_table, size_t * token_index,
+                                        Tree * program_tree, TreeNode * node, bool * defined_vars)
+{
+    MY_ASSERT(tokens);
+    MY_ASSERT(name_table);
+    MY_ASSERT(token_index);
+    MY_ASSERT(program_tree);
+    MY_ASSERT(node);
+    MY_ASSERT(defined_vars);
+
+    node->value.type = TREE_NODE_TYPES_STRING;
+    node->value.val.string = ",";
+
+    TreeNode * * arg_exp = &(node->left);
+    if (tree_create_node(program_tree, node, arg_exp))
+        return FRONT_END_ERRORS_TREE_ERROR;
+    return get_expression(tokens, name_table, token_index,
+                          program_tree, *arg_exp, defined_vars);
+}
+
+
+
+static bool is_func_call_arg(FrontEndToken * token)
+{
+    MY_ASSERT(token);
+
+    return token->type == TOKEN_TYPES_NUMBER ||
+           token->type == TOKEN_TYPES_NAME_TABLE_ELEM;
+}
+
+
+static bool is_func_call(FrontEndToken * tokens, size_t token_index)
+{
+    MY_ASSERT(tokens);
+
+    return tokens[token_index + 1].type == TOKEN_TYPES_SYMBOL &&
+           tokens[token_index + 1].val.sym == '(' &&
+           tokens[token_index].type == TOKEN_TYPES_NAME_TABLE_ELEM;
+}
+
+
+static bool is_e_op(FrontEndToken * token)
+{
+    MY_ASSERT(token);
+
+    return token->type == TOKEN_TYPES_OPERATOR &&
+          (token->val.op.id == OPERATORS_ADDITION ||
+           token->val.op.id == OPERATORS_SUBTRACTION);
+}
+
+
+static bool is_tp_op(FrontEndToken * token)
+{
+    MY_ASSERT(token);
+
+    return token->type == TOKEN_TYPES_OPERATOR &&
+          (token->val.op.id == OPERATORS_MULTIPLICATION ||
+           token->val.op.id == OPERATORS_DIVISION);
+}
+
+
+static bool is_calc_op(FrontEndToken * tokens, size_t token_index)
+{
+    MY_ASSERT(tokens);
+    MY_ASSERT(token_index);
+
+    while ((tokens[token_index].type != TOKEN_TYPES_SYMBOL ||
+           tokens[token_index].val.sym != '}') &&
+           tokens[token_index].type != TOKEN_TYPES_TERMINATOR)
+    {
+        if (tokens[token_index].type == TOKEN_TYPES_OPERATOR &&
+            tokens[token_index].val.op.id == OPERATORS_END_OF_OP)
+        {
+            return true;
+        }
+        token_index++;
+    }
+
+    return false;   
+}
+
+
+static bool is_if(FrontEndToken * token)
+{
+    MY_ASSERT(token);
+
+    return token->type == TOKEN_TYPES_KEY_WORD && 
+           token->val.kwd.id == KEY_WORDS_IF;
+}
+
+
+static bool is_ret(FrontEndToken * token)
+{
+    MY_ASSERT(token);
+
+    return token->type == TOKEN_TYPES_KEY_WORD &&
+           token->val.kwd.id == KEY_WORDS_RETURN;
 }
 
 
@@ -464,9 +994,28 @@ static bool is_key_word(char * buffer, size_t * index)
 }
 
 
-void tokens_dump(const FrontEndToken * tokens)
+static bool is_spec_symbol(char symbol)
+{
+    return is_braket(symbol) || (symbol == ',');
+}
+
+
+static bool is_comprassion_op(FrontEndToken * token)
+{
+    MY_ASSERT(token);
+    
+    return token->type == TOKEN_TYPES_OPERATOR &&
+          (token->val.op.id == OPERATORS_BELOW ||
+           token->val.op.id == OPERATORS_ABOVE ||
+           token->val.op.id == OPERATORS_EQUAL ||
+           token->val.op.id == OPERATORS_ASSIGMENT); 
+}
+
+
+void tokens_dump(const FrontEndToken * tokens, NameTable * name_table)
 {
     MY_ASSERT(tokens);
+    MY_ASSERT(name_table);
 
     printf("----------------------------------------------\n");
 
@@ -493,7 +1042,8 @@ void tokens_dump(const FrontEndToken * tokens)
                 break;
 
             case TOKEN_TYPES_NAME_TABLE_ELEM:
-                printf("[%zd]\t %-25s | NAME TABLE ELEMENT\n", i, tokens[i].val.elem.name);
+                printf("[%zd]\t %-25s | NAME TABLE ELEMENT\n", i,
+                       name_table->names[tokens[i].val.elem_id].name);
                 break;
 
             case TOKEN_TYPES_TERMINATOR:
@@ -508,4 +1058,53 @@ void tokens_dump(const FrontEndToken * tokens)
     printf("[%zd]\t \\0                        | TERMINATOR\n", i);
 
     printf("----------------------------------------------\n");
+}
+
+
+void fe_error_output(FrontEndErrors fe_errors, size_t token_index)
+{
+    printf("!!!Syntaxis Error!!!\n");
+    #define ERROR_PROC(error_id, error_message)                     \
+        if (fe_errors & error_id)                                   \
+            printf("Token %zd: %s\n", token_index, error_message);
+
+    #include "front_end_errors.h"
+
+    #undef ERROR_PROC
+
+    puts("");
+    return;
+}
+
+
+static void tok_dump(FrontEndToken * token)
+{
+    MY_ASSERT(token);
+
+    printf("Cur token: ");
+    switch (token->type)
+    {
+        case TOKEN_TYPES_KEY_WORD:
+            printf("%s (kwd)\n", token->val.kwd.name);
+            break;
+        case TOKEN_TYPES_NAME_TABLE_ELEM:
+            printf("%zd (nt elem id)\n", token->val.elem_id);
+            break;
+        case TOKEN_TYPES_NUMBER:
+            printf("%.2lf (num)\n", token->val.num);
+            break;
+        case TOKEN_TYPES_OPERATOR:
+            printf("%s (op)\n", token->val.op.value);
+            break;
+        case TOKEN_TYPES_SYMBOL:
+            printf("%c (sym)\n", token->val.sym);
+            break;
+        case TOKEN_TYPES_TERMINATOR:
+            printf("\\0 (terminator)\n");
+            break;
+        default:
+            break;
+    }
+
+    return;
 }
