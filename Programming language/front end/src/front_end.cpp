@@ -13,70 +13,70 @@ const char * END_OF_BODY_STRING = "END OF BODY";
 const char BODY_START_SYM = '{';
 const char BODY_END_SYM   = '}';
 
-static FrontEndErrors get_all_functions(FrontEndToken * tokens, NameTable * name_table,
+static FrontEndErrors get_all_functions(LangToken * tokens, NameTable * name_table,
                                         size_t * token_index, Tree * program_tree);
-static FrontEndErrors get_function(FrontEndToken * tokens, NameTable * name_table,
+static FrontEndErrors get_function(LangToken * tokens, NameTable * name_table,
                                    size_t * token_index, Tree * program_tree,
                                    TreeNode * function_node);
-static FrontEndErrors get_func_args(FrontEndToken * tokens, NameTable * name_table,
+static FrontEndErrors get_func_args(LangToken * tokens, NameTable * name_table,
                                     size_t * token_index, Tree * program_tree,
                                     TreeNode * arg_node);
-static FrontEndErrors get_func_body(FrontEndToken * tokens, NameTable * name_table,
+static FrontEndErrors get_func_body(LangToken * tokens, NameTable * name_table,
                                     size_t * token_index, Tree * program_tree,
                                     TreeNode * body_node, bool * defined_vars);
-static FrontEndErrors get_ret(FrontEndToken * tokens, NameTable * name_table,
+static FrontEndErrors get_ret(LangToken * tokens, NameTable * name_table,
                               size_t * token_index, Tree * program_tree,
                               TreeNode * node, bool * defined_vars);
-static FrontEndErrors get_calc_op(FrontEndToken * tokens, NameTable * name_table,
+static FrontEndErrors get_calc_op(LangToken * tokens, NameTable * name_table,
                                   size_t * token_index, Tree * program_tree,
                                   TreeNode * node, bool * defined_vars);
-static FrontEndErrors get_definition(FrontEndToken * tokens, NameTable * name_table,
+static FrontEndErrors get_definition(LangToken * tokens, NameTable * name_table,
                                      size_t * token_index, Tree * program_tree,
                                      TreeNode * node, bool * defined_vars);
-static FrontEndErrors get_if(FrontEndToken * tokens, NameTable * name_table,
+static FrontEndErrors get_if(LangToken * tokens, NameTable * name_table,
                              size_t * token_index, Tree * program_tree,
                              TreeNode * cur_node, bool * defined_vars);
-static FrontEndErrors get_expression(FrontEndToken * tokens, NameTable * name_table,
+static FrontEndErrors get_expression(LangToken * tokens, NameTable * name_table,
                                      size_t * token_index, Tree * program_tree,
                                      TreeNode * exp_node, bool * defined_vars);
-static FrontEndErrors get_e(FrontEndToken * tokens, NameTable * name_table,
+static FrontEndErrors get_e(LangToken * tokens, NameTable * name_table,
                             size_t * token_index, Tree * program_tree,
                             TreeNode * node, bool * defined_vars);
-static FrontEndErrors get_tp(FrontEndToken * tokens, NameTable * name_table,
+static FrontEndErrors get_tp(LangToken * tokens, NameTable * name_table,
                              size_t * token_index, Tree * program_tree,
                              TreeNode * node, bool * defined_vars);
-static FrontEndErrors get_p(FrontEndToken * tokens, NameTable * name_table,
+static FrontEndErrors get_p(LangToken * tokens, NameTable * name_table,
                             size_t * token_index, Tree * program_tree,
                             TreeNode * node, bool * defined_vars);
-static FrontEndErrors get_n(FrontEndToken * tokens, NameTable * name_table,
+static FrontEndErrors get_n(LangToken * tokens, NameTable * name_table,
                             size_t * token_index, Tree * program_tree,
                             TreeNode * node, bool * defined_vars);
-static FrontEndErrors get_func_call(FrontEndToken * tokens, NameTable * name_table,
+static FrontEndErrors get_func_call(LangToken * tokens, NameTable * name_table,
                                     size_t * token_index, Tree * program_tree,
                                     TreeNode * node, bool * defined_vars);
-static FrontEndErrors get_func_call_arg(FrontEndToken * tokens, NameTable * name_table,
+static FrontEndErrors get_func_call_arg(LangToken * tokens, NameTable * name_table,
                                         size_t * token_index, Tree * program_tree,
                                         TreeNode * node, bool * defined_vars);
 
 static char * fe_next_token(char * buffer);
-static bool is_function(FrontEndToken * token);
-static bool is_data_type(FrontEndToken * token);
-static bool is_func_call(FrontEndToken * tokens, size_t token_index);
-static bool is_func_call_arg(FrontEndToken * token);
-static bool is_e_op(FrontEndToken * token);
-static bool is_tp_op(FrontEndToken * token);
-static bool is_ret(FrontEndToken * token);
-static bool is_calc_op(FrontEndToken * tokens, size_t token_index);
-static bool is_if(FrontEndToken * token);
+static bool is_function(LangToken * token);
+static bool is_data_type(LangToken * token);
+static bool is_func_call(LangToken * tokens, size_t token_index);
+static bool is_func_call_arg(LangToken * token);
+static bool is_e_op(LangToken * token);
+static bool is_tp_op(LangToken * token);
+static bool is_ret(LangToken * token);
+static bool is_calc_op(LangToken * tokens, size_t token_index);
+static bool is_if(LangToken * token);
 static bool is_operator(char * buffer, size_t * index);
 static bool is_key_word(char * buffer, size_t * index);
 static bool is_spec_symbol(char symbol);
-static bool is_comprassion_op(FrontEndToken * token);
-static void tok_dump(FrontEndToken * token);
+static bool is_comprassion_op(LangToken * token);
+static void tok_dump(LangToken * token);
 // static void save
 
 
-FrontEndErrors separate_tokens(char * buffer, FrontEndToken * tokens,
+FrontEndErrors separate_tokens(char * buffer, LangToken * tokens,
                                size_t max_tokens_number, NameTable * name_table)
 {
     MY_ASSERT(buffer);
@@ -169,7 +169,7 @@ FrontEndErrors separate_tokens(char * buffer, FrontEndToken * tokens,
 }
 
 
-FrontEndErrors get_program_code(FrontEndToken * tokens, NameTable * name_table,
+FrontEndErrors get_program_code(LangToken * tokens, NameTable * name_table,
                                 Tree * program_tree, size_t * token_index)
 {
     MY_ASSERT(tokens);
@@ -189,7 +189,7 @@ FrontEndErrors get_program_code(FrontEndToken * tokens, NameTable * name_table,
 }
 
 
-static FrontEndErrors get_all_functions(FrontEndToken * tokens, NameTable * name_table,
+static FrontEndErrors get_all_functions(LangToken * tokens, NameTable * name_table,
                                         size_t * token_index, Tree * program_tree)
 {
     MY_ASSERT(tokens);
@@ -220,7 +220,7 @@ static FrontEndErrors get_all_functions(FrontEndToken * tokens, NameTable * name
 }
 
 
-static bool is_function(FrontEndToken * token)
+static bool is_function(LangToken * token)
 {
     MY_ASSERT(token);
 
@@ -229,7 +229,7 @@ static bool is_function(FrontEndToken * token)
 }
 
 
-static FrontEndErrors get_function(FrontEndToken * tokens, NameTable * name_table,
+static FrontEndErrors get_function(LangToken * tokens, NameTable * name_table,
                                    size_t * token_index, Tree * program_tree,
                                    TreeNode * function_node)
 {
@@ -242,7 +242,7 @@ static FrontEndErrors get_function(FrontEndToken * tokens, NameTable * name_tabl
     FrontEndErrors fe_errors = 0;
     if (!is_data_type(tokens + *token_index))
         return FRONT_END_ERRORS_DATA_TYPE_EXPECTED;
-    FrontEndToken ret_data_type = tokens[(*token_index)++];
+    LangToken ret_data_type = tokens[(*token_index)++];
 
     if (tokens[*token_index].type != TOKEN_TYPES_NAME_TABLE_ELEM)
     {
@@ -290,7 +290,7 @@ static FrontEndErrors get_function(FrontEndToken * tokens, NameTable * name_tabl
 }
 
 
-static bool is_data_type(FrontEndToken * token)
+static bool is_data_type(LangToken * token)
 {
     MY_ASSERT(token);
 
@@ -303,7 +303,7 @@ static bool is_data_type(FrontEndToken * token)
 }
 
 
-static FrontEndErrors get_func_args(FrontEndToken * tokens, NameTable * name_table,
+static FrontEndErrors get_func_args(LangToken * tokens, NameTable * name_table,
                                     size_t * token_index, Tree * program_tree,
                                     TreeNode * arg_node)
 {
@@ -357,7 +357,7 @@ static FrontEndErrors get_func_args(FrontEndToken * tokens, NameTable * name_tab
 }
 
 
-static FrontEndErrors get_func_body(FrontEndToken * tokens, NameTable * name_table,
+static FrontEndErrors get_func_body(LangToken * tokens, NameTable * name_table,
                                     size_t * token_index, Tree * program_tree,
                                     TreeNode * body_node, bool * defined_vars)
 {
@@ -430,7 +430,7 @@ static FrontEndErrors get_func_body(FrontEndToken * tokens, NameTable * name_tab
 }
 
 
-static FrontEndErrors get_ret(FrontEndToken * tokens, NameTable * name_table,
+static FrontEndErrors get_ret(LangToken * tokens, NameTable * name_table,
                               size_t * token_index, Tree * program_tree,
                               TreeNode * node, bool * defined_vars)
 {
@@ -466,7 +466,7 @@ static FrontEndErrors get_ret(FrontEndToken * tokens, NameTable * name_table,
 }
 
 
-static FrontEndErrors get_calc_op(FrontEndToken * tokens, NameTable * name_table,
+static FrontEndErrors get_calc_op(LangToken * tokens, NameTable * name_table,
                                   size_t * token_index, Tree * program_tree,
                                   TreeNode * node, bool * defined_vars)
 {
@@ -517,7 +517,7 @@ static FrontEndErrors get_calc_op(FrontEndToken * tokens, NameTable * name_table
 }
 
 
-static FrontEndErrors get_definition(FrontEndToken * tokens, NameTable * name_table,
+static FrontEndErrors get_definition(LangToken * tokens, NameTable * name_table,
                                      size_t * token_index, Tree * program_tree,
                                      TreeNode * node, bool * defined_vars)
 {
@@ -557,7 +557,7 @@ static FrontEndErrors get_definition(FrontEndToken * tokens, NameTable * name_ta
 }
 
 
-static FrontEndErrors get_if(FrontEndToken * tokens, NameTable * name_table,
+static FrontEndErrors get_if(LangToken * tokens, NameTable * name_table,
                              size_t * token_index, Tree * program_tree,
                              TreeNode * cur_node, bool * defined_vars)
 {
@@ -602,7 +602,7 @@ static FrontEndErrors get_if(FrontEndToken * tokens, NameTable * name_table,
 }
 
 
-static FrontEndErrors get_expression(FrontEndToken * tokens, NameTable * name_table,
+static FrontEndErrors get_expression(LangToken * tokens, NameTable * name_table,
                                      size_t * token_index, Tree * program_tree,
                                      TreeNode * exp_node, bool * defined_vars)
 {
@@ -643,7 +643,7 @@ static FrontEndErrors get_expression(FrontEndToken * tokens, NameTable * name_ta
 }
 
 
-static FrontEndErrors get_e(FrontEndToken * tokens, NameTable * name_table,
+static FrontEndErrors get_e(LangToken * tokens, NameTable * name_table,
                             size_t * token_index, Tree * program_tree,
                             TreeNode * node, bool * defined_vars)
 {
@@ -688,7 +688,7 @@ static FrontEndErrors get_e(FrontEndToken * tokens, NameTable * name_table,
 }
 
 
-static FrontEndErrors get_tp(FrontEndToken * tokens, NameTable * name_table,
+static FrontEndErrors get_tp(LangToken * tokens, NameTable * name_table,
                              size_t * token_index, Tree * program_tree,
                              TreeNode * node, bool * defined_vars)
 {
@@ -733,7 +733,7 @@ static FrontEndErrors get_tp(FrontEndToken * tokens, NameTable * name_table,
 }
 
 
-static FrontEndErrors get_p(FrontEndToken * tokens, NameTable * name_table,
+static FrontEndErrors get_p(LangToken * tokens, NameTable * name_table,
                             size_t * token_index, Tree * program_tree,
                             TreeNode * node, bool * defined_vars)
 {
@@ -764,7 +764,7 @@ static FrontEndErrors get_p(FrontEndToken * tokens, NameTable * name_table,
 }
 
 
-static FrontEndErrors get_n(FrontEndToken * tokens, NameTable * name_table,
+static FrontEndErrors get_n(LangToken * tokens, NameTable * name_table,
                             size_t * token_index, Tree * program_tree,
                             TreeNode * node, bool * defined_vars)
 {
@@ -800,7 +800,7 @@ static FrontEndErrors get_n(FrontEndToken * tokens, NameTable * name_table,
 }
 
 
-static FrontEndErrors get_func_call(FrontEndToken * tokens, NameTable * name_table,
+static FrontEndErrors get_func_call(LangToken * tokens, NameTable * name_table,
                                     size_t * token_index, Tree * program_tree,
                                     TreeNode * node, bool * defined_vars)
 {
@@ -853,7 +853,7 @@ static FrontEndErrors get_func_call(FrontEndToken * tokens, NameTable * name_tab
 }
 
 
-static FrontEndErrors get_func_call_arg(FrontEndToken * tokens, NameTable * name_table,
+static FrontEndErrors get_func_call_arg(LangToken * tokens, NameTable * name_table,
                                         size_t * token_index, Tree * program_tree,
                                         TreeNode * node, bool * defined_vars)
 {
@@ -876,7 +876,7 @@ static FrontEndErrors get_func_call_arg(FrontEndToken * tokens, NameTable * name
 
 
 
-static bool is_func_call_arg(FrontEndToken * token)
+static bool is_func_call_arg(LangToken * token)
 {
     MY_ASSERT(token);
 
@@ -885,7 +885,7 @@ static bool is_func_call_arg(FrontEndToken * token)
 }
 
 
-static bool is_func_call(FrontEndToken * tokens, size_t token_index)
+static bool is_func_call(LangToken * tokens, size_t token_index)
 {
     MY_ASSERT(tokens);
 
@@ -895,7 +895,7 @@ static bool is_func_call(FrontEndToken * tokens, size_t token_index)
 }
 
 
-static bool is_e_op(FrontEndToken * token)
+static bool is_e_op(LangToken * token)
 {
     MY_ASSERT(token);
 
@@ -905,7 +905,7 @@ static bool is_e_op(FrontEndToken * token)
 }
 
 
-static bool is_tp_op(FrontEndToken * token)
+static bool is_tp_op(LangToken * token)
 {
     MY_ASSERT(token);
 
@@ -915,7 +915,7 @@ static bool is_tp_op(FrontEndToken * token)
 }
 
 
-static bool is_calc_op(FrontEndToken * tokens, size_t token_index)
+static bool is_calc_op(LangToken * tokens, size_t token_index)
 {
     MY_ASSERT(tokens);
     MY_ASSERT(token_index);
@@ -936,7 +936,7 @@ static bool is_calc_op(FrontEndToken * tokens, size_t token_index)
 }
 
 
-static bool is_if(FrontEndToken * token)
+static bool is_if(LangToken * token)
 {
     MY_ASSERT(token);
 
@@ -945,7 +945,7 @@ static bool is_if(FrontEndToken * token)
 }
 
 
-static bool is_ret(FrontEndToken * token)
+static bool is_ret(LangToken * token)
 {
     MY_ASSERT(token);
 
@@ -1023,7 +1023,7 @@ static bool is_spec_symbol(char symbol)
 }
 
 
-static bool is_comprassion_op(FrontEndToken * token)
+static bool is_comprassion_op(LangToken * token)
 {
     MY_ASSERT(token);
 
@@ -1035,7 +1035,7 @@ static bool is_comprassion_op(FrontEndToken * token)
 }
 
 
-void tokens_dump(const FrontEndToken * tokens, NameTable * name_table)
+void tokens_dump(const LangToken * tokens, NameTable * name_table)
 {
     MY_ASSERT(tokens);
     MY_ASSERT(name_table);
@@ -1100,7 +1100,7 @@ void fe_error_output(FrontEndErrors fe_errors, size_t token_index)
 }
 
 
-static void tok_dump(FrontEndToken * token)
+static void tok_dump(LangToken * token)
 {
     MY_ASSERT(token);
 

@@ -33,12 +33,12 @@
     const size_t MAX_FUNCTIONS_NUMBER = 64;
 
 
-    FrontEndErrors separate_tokens(char * buffer, FrontEndToken * tokens,
+    FrontEndErrors separate_tokens(char * buffer, LangToken * tokens,
                                    size_t max_tokens_number, NameTable * name_table);
-    FrontEndErrors get_program_code(FrontEndToken * tokens, NameTable * name_table,
+    FrontEndErrors get_program_code(LangToken * tokens, NameTable * name_table,
                                     Tree * program_tree,
                                     size_t * token_index);
     void fe_error_output(FrontEndErrors fe_errors, size_t token_inedex);
-    void tokens_dump(const FrontEndToken * tokens, NameTable * name_table);
+    void tokens_dump(const LangToken * tokens, NameTable * name_table);
 
 #endif // FRONT_END_H

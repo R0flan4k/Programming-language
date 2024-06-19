@@ -315,19 +315,19 @@ static void fprint_node_val(const TreeNode * node, FILE * fp, NameTable * name_t
     switch (node->value.type)
     {
         case TOKEN_TYPES_NUMBER:
-            fprintf(fp, "NUM : %.2lf ", node->value.val.num);
+            fprintf(fp, "NUM %.2lf ", node->value.val.num);
             break;
         case TOKEN_TYPES_SYMBOL:
-            fprintf(fp, "SYM : %c ", node->value.val.sym);
+            fprintf(fp, "SYM %c ", node->value.val.sym);
             break;
         case TOKEN_TYPES_KEY_WORD:
-            fprintf(fp, "KWD : %s ", node->value.val.kwd.name);
+            fprintf(fp, "KWD %s ", node->value.val.kwd.name);
             break;
         case TOKEN_TYPES_OPERATOR:
-            fprintf(fp, "OP : %s ",  node->value.val.op.value);
+            fprintf(fp, "OP %s ",  node->value.val.op.value);
             break;
         case TOKEN_TYPES_NAME_TABLE_ELEM:
-            fprintf(fp, "NT ELEM : %s ", name_table->names[node->value.val.elem_id].name);
+            fprintf(fp, "NT_ELEM %s ", name_table->names[node->value.val.elem_id].name);
             break;
         case TOKEN_TYPES_TERMINATOR:
             fprintf(fp, "TERMINATOR ");
@@ -418,7 +418,7 @@ TError_t tree_copy_branch(Tree * dst_tree, TreeNode * dst_node, const TreeNode *
 
 
 void tree_save_to_file(Tree * tree, NameTable * name_table,
-                       char * data_file_name)
+                       const char * data_file_name)
 {
     MY_ASSERT(tree);
     MY_ASSERT(name_table);

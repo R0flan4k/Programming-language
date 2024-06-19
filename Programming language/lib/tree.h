@@ -43,12 +43,12 @@
         NameTableElemId elem_id;
     };
 
-    struct FrontEndToken {
+    struct LangToken {
         Token val;
         TokenTypes type;
     };
 
-    typedef FrontEndToken Tree_t;
+    typedef LangToken Tree_t;
     typedef int TError_t;
 
     #define TREE_SPEC "%p"
@@ -97,6 +97,6 @@
     void tree_text_dump(const Tree * tree);
     TError_t tree_copy_branch(Tree * dst_tree, TreeNode * dst_node, const TreeNode * src_node);
     void tree_save_to_file(Tree * tree, NameTable * name_table,
-                           char * data_file_name);
+                           const char * data_file_name);
 
 #endif // TREE_H

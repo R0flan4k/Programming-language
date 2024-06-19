@@ -23,7 +23,7 @@ int main(int argc, char * argv[])
         return FRONT_END_ERRORS_CANT_CONVERT_SOURCE_FILE;
     }
 
-    FrontEndToken tokens[MAX_TOKENS_NUMBER] = {};
+    LangToken tokens[MAX_TOKENS_NUMBER] = {};
     NameTable name_table = {};
 
     fe_errors |= separate_tokens(buffer, tokens, MAX_TOKENS_NUMBER, &name_table);

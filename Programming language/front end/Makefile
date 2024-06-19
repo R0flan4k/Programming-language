@@ -9,9 +9,10 @@ LIBDIR = ../lib
 SRC = $(wildcard $(SRCDIR)/*.cpp) $(LIBDIR)/*.cpp
 OBJ = $(patsubst $(SRCDIR)/%.cpp, $(OBJDIR)/%.o, $(SRC))
 CXXFLAGS += $(IFLAGS)
+OUT = front_end
 
 all : $(OBJ)
-	@$(CXX) $(IFLAGS) $(CFLAGS) $^ -o front_end
+	@$(CXX) $(IFLAGS) $(CFLAGS) $^ -o $(OUT)
 
 $(OBJDIR)/%.o : $(SRCDIR)/%.cpp
 	@mkdir -p $(@D)
@@ -19,4 +20,4 @@ $(OBJDIR)/%.o : $(SRCDIR)/%.cpp
 
 .PHONY: clean
 clean:
-	@rm -f $(OBJDIR)/*.o ./graphviz/*.dot ./graphviz/*.png ./latex/* *.exe front_end
+	@rm -f $(OBJDIR)/*.o ./graphviz/*.dot ./graphviz/*.png ./latex/* *.exe $(OUT)
