@@ -41,7 +41,8 @@ int main(int argc, char * argv[])
     if (tree_errors) return tree_errors;
     fe_errors |= get_program_code(tokens, &name_table, &program_tree, &token_index);
     if (fe_errors) fe_error_output(fe_errors, token_index);
-    tree_dump(&program_tree);
+    tree_dump(&program_tree, &name_table);
+    tree_save_to_file(&program_tree, &name_table, "prog");
 
     op_delete_tree(&program_tree);
     free(buffer);

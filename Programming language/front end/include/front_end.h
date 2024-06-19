@@ -7,7 +7,6 @@
     #include "tree.h"
 
     typedef int FrontEndErrors;
-    typedef size_t NameTableElemId;
 
     enum FrontEndErrorMasks {
         FRONT_END_ERRORS_CANT_CONVERT_SOURCE_FILE      = 1 << 0,
@@ -30,43 +29,14 @@
         FRONT_END_ERRORS_DEFINITION_EXPECTED           = 1 << 17,
     };
 
-    enum TokenTypes {
-        TOKEN_TYPES_NUMBER,
-        TOKEN_TYPES_OPERATOR,
-        TOKEN_TYPES_NAME_TABLE_ELEM,
-        TOKEN_TYPES_KEY_WORD,
-        TOKEN_TYPES_SYMBOL,
-        TOKEN_TYPES_TERMINATOR,
-    };
-
-    union Token {
-        double num;
-        char sym;
-        Operator op;
-        KeyWord kwd;
-        NameTableElemId elem_id;
-    };
-
-    struct FrontEndToken {
-        Token val;
-        TokenTypes type;
-    };
-
-    struct FuncTree {
-        Tree tree;
-        const char * name;
-    };
-
     const size_t MAX_TOKENS_NUMBER = 128;
     const size_t MAX_FUNCTIONS_NUMBER = 64;
-    const FrontEndToken FUNCTION_OPENING = {.val = {.sym = '{'},
-                                            .type = TOKEN_TYPES_SYMBOL};
 
 
-
-    FrontEndErrors separate_tokens(char * buffer, FrontEndToken * tokens, size_t max_tokens_number,
-                                   NameTable * name_table);
-    FrontEndErrors get_program_code(FrontEndToken * tokens, NameTable * name_table, Tree * program_tree,
+    FrontEndErrors separate_tokens(char * buffer, FrontEndToken * tokens,
+                                   size_t max_tokens_number, NameTable * name_table);
+    FrontEndErrors get_program_code(FrontEndToken * tokens, NameTable * name_table,
+                                    Tree * program_tree,
                                     size_t * token_index);
     void fe_error_output(FrontEndErrors fe_errors, size_t token_inedex);
     void tokens_dump(const FrontEndToken * tokens, NameTable * name_table);

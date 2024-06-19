@@ -12,9 +12,13 @@ const size_t BUFFER_SIZE = 256;
 
 static size_t tree_free(TreeNode * * main_node);
 static size_t tree_free_iternal(TreeNode * * node, size_t * count);
-static void print_tree_nodes(const TreeNode * node, FILE * fp);
+static void print_tree_nodes(const TreeNode * node, FILE * fp, NameTable * name_table);
 static void print_tree_edges(const TreeNode * node, FILE * fp);
 static void print_text_nodes(const TreeNode * main_node);
+static void fprint_node_val(const TreeNode * node, FILE * fp, NameTable * name_table);
+static void save_to_file_rec(TreeNode * node, FILE * fp,
+                             NameTable * name_table, size_t * rec_depth);
+static void fprint_tabulation(FILE * fp, int recursion_depth);
 
 
 TError_t op_new_tree(Tree * tree, const Tree_t root_value)
@@ -221,7 +225,8 @@ TError_t tree_delete_branch(Tree * tree, TreeNode * * node)
 
 void tree_dump_iternal(const Tree * tree,
                        const char * tree_name, const char * func,
-                       const int line, const char * file)
+                       const int line, const char * file,
+                       NameTable * name_table)
 {
     MY_ASSERT(tree);
     MY_ASSERT(tree_name);
@@ -246,7 +251,7 @@ void tree_dump_iternal(const Tree * tree,
                 "    splines = curved;\n"
                 "    edge[minlen = 3];\n"
                 "    node[shape = record, style = \"rounded\", color = \"#f58eb4\",\n"
-                "        fixedsize = true, height = 1, width = 6, fontsize = 15];\n"
+                "        fixedsize = true, height = 1, width = 6, fontsize = 20];\n"
                 "    {rank = min;\n"
                 "        inv_min [style = invis];\n"
                 "    }\n"
@@ -256,7 +261,7 @@ void tree_dump_iternal(const Tree * tree,
 
     if (tree->root)
     {
-        print_tree_nodes(tree->root, fp);
+        print_tree_nodes(tree->root, fp, name_table);
         print_tree_edges(tree->root, fp);
 
         fprintf(fp, "info_node -> node%p [style = invis];\n", tree->root);
@@ -280,34 +285,58 @@ void tree_dump_iternal(const Tree * tree,
 }
 
 
-static void print_tree_nodes(const TreeNode * node, FILE * fp)
+static void print_tree_nodes(const TreeNode * node, FILE * fp,
+                             NameTable * name_table)
 {
     MY_ASSERT(node);
 
-    fprintf(fp, "    node%p [ label = \"{[%p] ", node, node);
+    fprintf(fp, "    node%p [ label = \"{ ", node);
+    fprint_node_val(node, fp, name_table);
+    fprintf(fp, "| { <l> [%p] | <r> [%p]  }}\" ]\n", node->left, node->right);
+
+    if (node->right)
+    {
+        print_tree_nodes(node->right, fp, name_table);
+    }
+
+    if (node->left)
+    {
+        print_tree_nodes(node->left, fp, name_table);
+    }
+}
+
+
+static void fprint_node_val(const TreeNode * node, FILE * fp, NameTable * name_table)
+{
+    MY_ASSERT(node);
+    MY_ASSERT(fp);
+    MY_ASSERT(name_table);
+
     switch (node->value.type)
     {
-        case TREE_NODE_TYPES_NUMBER:
-            fprintf(fp, "%.2lf ", node->value.val.num);
+        case TOKEN_TYPES_NUMBER:
+            fprintf(fp, "NUM : %.2lf ", node->value.val.num);
             break;
-        case TREE_NODE_TYPES_STRING:
-            fprintf(fp, "%s ", node->value.val.string);
+        case TOKEN_TYPES_SYMBOL:
+            fprintf(fp, "SYM : %c ", node->value.val.sym);
+            break;
+        case TOKEN_TYPES_KEY_WORD:
+            fprintf(fp, "KWD : %s ", node->value.val.kwd.name);
+            break;
+        case TOKEN_TYPES_OPERATOR:
+            fprintf(fp, "OP : %s ",  node->value.val.op.value);
+            break;
+        case TOKEN_TYPES_NAME_TABLE_ELEM:
+            fprintf(fp, "NT ELEM : %s ", name_table->names[node->value.val.elem_id].name);
+            break;
+        case TOKEN_TYPES_TERMINATOR:
+            fprintf(fp, "TERMINATOR ");
             break;
         default:
             MY_ASSERT(0 && "UNREACHABLE");
             break;
     }
-    fprintf(fp, "| { <l> left[%p] | right[%p]  }}\" ]\n", node->left, node->right);
-
-    if (node->right)
-    {
-        print_tree_nodes(node->right, fp);
-    }
-
-    if (node->left)
-    {
-        print_tree_nodes(node->left, fp);
-    }
+    return;
 }
 
 
@@ -385,4 +414,65 @@ TError_t tree_copy_branch(Tree * dst_tree, TreeNode * dst_node, const TreeNode *
     }
 
     return errors;
+}
+
+
+void tree_save_to_file(Tree * tree, NameTable * name_table,
+                       char * data_file_name)
+{
+    MY_ASSERT(tree);
+    MY_ASSERT(name_table);
+
+    FILE * fp = file_open(data_file_name, "wb");
+    if (!fp) return;
+
+    size_t recursion_depth = 0;
+    save_to_file_rec(tree->root, fp, name_table, &recursion_depth);
+
+    fclose(fp);
+    return;
+}
+
+
+static void save_to_file_rec(TreeNode * node, FILE * fp,
+                             NameTable * name_table, size_t * rec_depth)
+{
+    MY_ASSERT(node);
+    MY_ASSERT(fp);
+    MY_ASSERT(name_table);
+    MY_ASSERT(rec_depth);
+
+    fprint_tabulation(fp, *rec_depth);
+    (*rec_depth)++;
+
+    fprintf(fp, "{\n");
+    if (node->left)
+    {
+        save_to_file_rec(node->left, fp, name_table, rec_depth);
+    }     
+    fprint_tabulation(fp, *rec_depth);   
+    fprint_node_val(node, fp, name_table);
+    fprintf(fp, "\n");
+    if (node->right)
+    {
+        save_to_file_rec(node->right, fp, name_table, rec_depth);
+    }
+    (*rec_depth)--;
+    fprint_tabulation(fp, *rec_depth);
+    fprintf(fp, "}\n");
+
+    return;
+}
+
+
+static void fprint_tabulation(FILE * fp, int recursion_depth)
+{
+    MY_ASSERT(fp);
+
+    for (int i = 0; i < recursion_depth; i++)
+    {
+        fprintf(fp, "\t");
+    }
+
+    return;
 }

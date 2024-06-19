@@ -1,0 +1,63 @@
+{
+	{
+		{
+			KWD : void 
+		}
+		KWD : int 
+		{
+			{
+				{
+					NT ELEM : aboba 
+				}
+				KWD : int 
+				{
+					NUM : 2.00 
+				}
+			}
+			SYM : ; 
+			{
+				{
+					{
+						{
+							NT ELEM : aboba 
+						}
+						OP : > 
+						{
+							NUM : 1.00 
+						}
+					}
+					KWD : if 
+					{
+						{
+							{
+								NT ELEM : aboba 
+							}
+							OP : = 
+							{
+								NUM : 1.00 
+							}
+						}
+						SYM : ; 
+						{
+							KWD : END OF BODY 
+						}
+					}
+				}
+				SYM : ; 
+				{
+					{
+						{
+							NT ELEM : aboba 
+						}
+						KWD : return 
+					}
+					SYM : ; 
+					{
+						KWD : END OF BODY 
+					}
+				}
+			}
+		}
+	}
+	NT ELEM : лох 
+}

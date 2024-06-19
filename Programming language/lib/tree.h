@@ -3,26 +3,57 @@
 
     #include <stdio.h>
 
-    union TreeValue {
+    #include "operators.h"
+    #include "key_words.h"
+    #include "name_table.h"
+
+    #if 0
+        union TreeValue {
+            double num;
+            const char * string;
+        };
+
+        enum TreeNodeTypes {
+            TREE_NODE_TYPES_NUMBER,
+            TREE_NODE_TYPES_STRING,
+        };
+
+        struct TreeElem {
+            TreeValue val;
+            TreeNodeTypes type;
+        };
+    #endif
+
+    typedef size_t NameTableElemId;
+
+    enum TokenTypes {
+        TOKEN_TYPES_NUMBER,
+        TOKEN_TYPES_OPERATOR,
+        TOKEN_TYPES_NAME_TABLE_ELEM,
+        TOKEN_TYPES_KEY_WORD,
+        TOKEN_TYPES_SYMBOL,
+        TOKEN_TYPES_TERMINATOR,
+    };
+
+    union Token {
         double num;
-        const char * string;
+        char sym;
+        Operator op;
+        KeyWord kwd;
+        NameTableElemId elem_id;
     };
 
-    enum TreeNodeTypes {
-        TREE_NODE_TYPES_NUMBER,
-        TREE_NODE_TYPES_STRING,
+    struct FrontEndToken {
+        Token val;
+        TokenTypes type;
     };
 
-    struct TreeElem {
-        TreeValue val;
-        TreeNodeTypes type;
-    };
-
-    typedef TreeElem Tree_t;
+    typedef FrontEndToken Tree_t;
     typedef int TError_t;
 
     #define TREE_SPEC "%p"
-    #define tree_dump(tree) tree_dump_iternal((tree), #tree, __func__, __LINE__, __FILE__)
+    #define tree_dump(tree, name_table) tree_dump_iternal((tree), #tree, __func__, \
+                                                          __LINE__, __FILE__, (name_table))
 
     enum TreeErrorsMasks {
         TREE_ERRORS_CANT_ALLOCATE_MEMORY = 1 << 0,
@@ -61,8 +92,11 @@
     TError_t tree_delete_branch(Tree * tree, TreeNode * * node);
     void tree_dump_iternal(const Tree * tree,
                            const char * tree_name, const char * func,
-                           const int line, const char * file);
+                           const int line, const char * file,
+                           NameTable * name_table);
     void tree_text_dump(const Tree * tree);
     TError_t tree_copy_branch(Tree * dst_tree, TreeNode * dst_node, const TreeNode * src_node);
+    void tree_save_to_file(Tree * tree, NameTable * name_table,
+                           char * data_file_name);
 
 #endif // TREE_H
