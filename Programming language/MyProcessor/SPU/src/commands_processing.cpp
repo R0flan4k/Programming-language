@@ -104,9 +104,7 @@ Error_t spu_unary(Stack * stk, SpuUnaryMathOperations mode)
             break;
     }
 
-    errors = stack_push(stk, result);
-
-    return errors;
+    return stack_push(stk, result);
 }
 
 

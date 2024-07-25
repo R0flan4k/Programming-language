@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 
@@ -85,7 +86,10 @@ static bool is_operator(char * buffer, size_t * index);
 static bool is_key_word(char * buffer, size_t * index);
 static bool is_spec_symbol(char symbol);
 static bool is_comprassion_op(LangToken * token);
-static void tok_dump(LangToken * token);
+
+#ifndef NDEBUG
+    static void tok_dump(LangToken * token);
+#endif // NDEBUG
 
 
 FrontEndErrors separate_tokens(char * buffer, LangToken * tokens,
@@ -1311,35 +1315,36 @@ void fe_error_output(FrontEndErrors fe_errors, size_t token_index)
     return;
 }
 
-
-static void tok_dump(LangToken * token)
-{
-    MY_ASSERT(token);
-
-    printf("Cur token: ");
-    switch (token->type)
+#ifndef NDEBUG
+    static void tok_dump(LangToken * token)
     {
-        case TOKEN_TYPES_KEY_WORD:
-            printf("%s (kwd)\n", KEY_WORDS_ARRAY[token->val.kwd_id].name);
-            break;
-        case TOKEN_TYPES_NAME_TABLE_ELEM:
-            printf("%zd (nt elem id)\n", token->val.elem_id);
-            break;
-        case TOKEN_TYPES_NUMBER:
-            printf("%.2lf (num)\n", token->val.num);
-            break;
-        case TOKEN_TYPES_OPERATOR:
-            printf("%s (op)\n", OPERATORS_ARRAY[token->val.op_id].value);
-            break;
-        case TOKEN_TYPES_SYMBOL:
-            printf("%c (sym)\n", token->val.sym);
-            break;
-        case TOKEN_TYPES_TERMINATOR:
-            printf("\\0 (terminator)\n");
-            break;
-        default:
-            break;
-    }
+        MY_ASSERT(token);
 
-    return;
-}
+        printf("Cur token: ");
+        switch (token->type)
+        {
+            case TOKEN_TYPES_KEY_WORD:
+                printf("%s (kwd)\n", KEY_WORDS_ARRAY[token->val.kwd_id].name);
+                break;
+            case TOKEN_TYPES_NAME_TABLE_ELEM:
+                printf("%zd (nt elem id)\n", token->val.elem_id);
+                break;
+            case TOKEN_TYPES_NUMBER:
+                printf("%.2lf (num)\n", token->val.num);
+                break;
+            case TOKEN_TYPES_OPERATOR:
+                printf("%s (op)\n", OPERATORS_ARRAY[token->val.op_id].value);
+                break;
+            case TOKEN_TYPES_SYMBOL:
+                printf("%c (sym)\n", token->val.sym);
+                break;
+            case TOKEN_TYPES_TERMINATOR:
+                printf("\\0 (terminator)\n");
+                break;
+            default:
+                break;
+        }
+
+        return;
+    }
+#endif // NDEBUG

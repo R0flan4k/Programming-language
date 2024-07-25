@@ -19,3 +19,9 @@ quadratic:
 run:
 	@./ASSEMBLER/assembler --source ../backend/beprog.sasm --target ./AsmBin/source.bin
 	@./SPU/spu --source ./AsmBin/source.bin
+
+lang:
+	@./ASSEMBLER/assembler --source ../backend/beprog.sasm --target ../prog.opa
+
+exec:
+	@./SPU/spu --source ../prog.opa
