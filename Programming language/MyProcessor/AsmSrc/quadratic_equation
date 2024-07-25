@@ -1,0 +1,106 @@
+in
+in
+in
+call :quadratic_solver
+hlt
+
+; Solving quadratic equation ax^2 + bx + c = 0.
+; Args:
+;     rax - "a" coefficient of equation.
+;     rbx - "b" coefficient of equation.
+;     rcx - "c" coefficient of equation.
+; Clobbers:
+;     rax, rbx, rcx, rdx.
+; Returns:
+;     void.
+:quadratic_solver
+pop rax		; rax = a
+pop rbx		; rbx = b
+pop rcx		; rcx = c
+call :is_zero_a
+push [0]
+push 0
+je :second_deg
+jmp :first_deg
+:second_deg
+call :calculate_discriminant
+push 0
+push rbx
+sub
+push 2
+push rax
+mul
+div
+pop rbx		; rbx = -b / 2a
+push rdx
+sqrt
+push 2
+push rax
+mul
+div
+pop rdx		; rdx = sqrt(D) / 2a
+push rbx
+push rdx
+add
+out
+push rbx
+push rdx
+sub
+out
+jmp :quadratic_solver_exit
+:first_deg
+push 0
+push rcx
+sub
+push rbx
+div
+out
+:quadratic_solver_exit
+ret
+
+
+; Calculates discriminant of quadratic equation.
+; Args:
+;     rax - "a" coefficient.
+;     rbx - "b" coefficient.
+;     rcx - "c" coefficient.
+; Clobbers:
+;     rdx.
+; Returns:
+;     rdx - discriminant of equation.
+:calculate_discriminant
+push rbx
+push rbx
+mul
+push 4
+push rax
+push rcx
+mul
+mul
+sub
+pop rdx
+ret
+
+
+; Checking if "a" coefficient is zero.
+; Arguments:
+;     rax - "a" coefficient.
+; Clobbers:
+;     [0]
+; Returns:
+;     [0] - is "a" zero.
+:is_zero_a
+push 0
+push rax
+je :true
+jmp :false
+:true
+push 1
+pop [0]
+jump :is_zero_a_exit
+:false
+push 0
+pop [0]
+:is_zero_a_exit
+ret
+

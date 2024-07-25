@@ -1,0 +1,118 @@
+call :proc0
+hlt
+
+;------------------------------------------
+:proc0
+;-declaration-
+	in
+	pop [1]
+;------------
+;-declaration-
+	in
+	pop [2]
+;------------
+;-declaration-
+	in
+	pop [3]
+;------------
+;-----if-----
+	push [1]
+	push 0.000
+	je :true1
+	push 0
+	jmp :exit1
+:true1
+	push 1
+:exit1
+	push 0
+	je :fail0
+;-function call-
+	push [2]
+	push [3]
+	call :proc4
+;------------
+	out
+;---return---
+	push 0.000
+	ret
+;------------
+:fail0
+;------------
+;-declaration-
+;-function call-
+	push [1]
+	push [2]
+	push [3]
+	call :proc6
+;------------
+	pop [5]
+;------------
+;-declaration-
+	push 0.000
+	push [2]
+	push [5]
+	sqrt
+	sub
+	sub
+	push 2.000
+	push [1]
+	mul
+	div
+	pop [7]
+;------------
+;-declaration-
+	push 0.000
+	push [2]
+	push [5]
+	sqrt
+	add
+	sub
+	push 2.000
+	push [1]
+	mul
+	div
+	pop [8]
+;------------
+	push [7]
+	out
+	push [8]
+	out
+;---return---
+	push 0.000
+	ret
+;------------
+;------------------------------------------
+
+;------------------------------------------
+:proc4
+	pop [10]
+	pop [9]
+;---return---
+	push 0.000
+	push [10]
+	sub
+	push [9]
+	div
+	ret
+;------------
+;------------------------------------------
+
+;------------------------------------------
+:proc6
+	pop [10]
+	pop [9]
+	pop [11]
+;---return---
+	push [9]
+	push [9]
+	mul
+	push 4.000
+	push [11]
+	push [10]
+	mul
+	mul
+	sub
+	ret
+;------------
+;------------------------------------------
+

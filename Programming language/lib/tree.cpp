@@ -12,13 +12,16 @@ const size_t BUFFER_SIZE = 256;
 
 static size_t tree_free(TreeNode * * main_node);
 static size_t tree_free_iternal(TreeNode * * node, size_t * count);
-static void print_tree_nodes(const TreeNode * node, FILE * fp, NameTable * name_table);
+static void print_tree_nodes(const TreeNode * node, FILE * fp);
 static void print_tree_edges(const TreeNode * node, FILE * fp);
 static void print_text_nodes(const TreeNode * main_node);
-static void fprint_node_val(const TreeNode * node, FILE * fp, NameTable * name_table);
+static void fprint_node_val(const TreeNode * node, FILE * fp);
+static void dump_fprint_node_val(const TreeNode * node, FILE * fp);
 static void save_to_file_rec(TreeNode * node, FILE * fp,
-                             NameTable * name_table, size_t * rec_depth);
+                             size_t * rec_depth);
 static void fprint_tabulation(FILE * fp, int recursion_depth);
+static TError_t buf_to_tree_rec(Tree * tree, TreeNode * node, char * * tree_buf_ptr);
+static void buf_to_tree_get_val(Tree * tree, TreeNode * node, char * * tree_buf_ptr);
 
 
 TError_t op_new_tree(Tree * tree, const Tree_t root_value)
@@ -225,8 +228,7 @@ TError_t tree_delete_branch(Tree * tree, TreeNode * * node)
 
 void tree_dump_iternal(const Tree * tree,
                        const char * tree_name, const char * func,
-                       const int line, const char * file,
-                       NameTable * name_table)
+                       const int line, const char * file)
 {
     MY_ASSERT(tree);
     MY_ASSERT(tree_name);
@@ -261,7 +263,7 @@ void tree_dump_iternal(const Tree * tree,
 
     if (tree->root)
     {
-        print_tree_nodes(tree->root, fp, name_table);
+        print_tree_nodes(tree->root, fp);
         print_tree_edges(tree->root, fp);
 
         fprintf(fp, "info_node -> node%p [style = invis];\n", tree->root);
@@ -285,32 +287,30 @@ void tree_dump_iternal(const Tree * tree,
 }
 
 
-static void print_tree_nodes(const TreeNode * node, FILE * fp,
-                             NameTable * name_table)
+static void print_tree_nodes(const TreeNode * node, FILE * fp)
 {
     MY_ASSERT(node);
 
     fprintf(fp, "    node%p [ label = \"{ ", node);
-    fprint_node_val(node, fp, name_table);
-    fprintf(fp, "| { <l> [%p] | <r> [%p]  }}\" ]\n", node->left, node->right);
+    dump_fprint_node_val(node, fp);
+    fprintf(fp, "| { <l> [%p] | <r> [%p]  }}}\" ]\n", node->left, node->right);
 
     if (node->right)
     {
-        print_tree_nodes(node->right, fp, name_table);
+        print_tree_nodes(node->right, fp);
     }
 
     if (node->left)
     {
-        print_tree_nodes(node->left, fp, name_table);
+        print_tree_nodes(node->left, fp);
     }
 }
 
 
-static void fprint_node_val(const TreeNode * node, FILE * fp, NameTable * name_table)
+static void dump_fprint_node_val(const TreeNode * node, FILE * fp)
 {
     MY_ASSERT(node);
     MY_ASSERT(fp);
-    MY_ASSERT(name_table);
 
     switch (node->value.type)
     {
@@ -321,16 +321,49 @@ static void fprint_node_val(const TreeNode * node, FILE * fp, NameTable * name_t
             fprintf(fp, "SYM %c ", node->value.val.sym);
             break;
         case TOKEN_TYPES_KEY_WORD:
-            fprintf(fp, "KWD %s ", node->value.val.kwd.name);
+            fprintf(fp, "KWD %s ", KEY_WORDS_ARRAY[node->value.val.kwd_id].name);
             break;
         case TOKEN_TYPES_OPERATOR:
-            fprintf(fp, "OP %s ",  node->value.val.op.value);
+            fprintf(fp, "OP %s ", OPERATORS_ARRAY[node->value.val.op_id].value);
             break;
         case TOKEN_TYPES_NAME_TABLE_ELEM:
-            fprintf(fp, "NT_ELEM %s ", name_table->names[node->value.val.elem_id].name);
+            fprintf(fp, "NT_ELEM %zd ", node->value.val.elem_id);
             break;
         case TOKEN_TYPES_TERMINATOR:
-            fprintf(fp, "TERMINATOR ");
+            fprintf(fp, "TERMINATOR \\0 ");
+            break;
+        default:
+            MY_ASSERT(0 && "UNREACHABLE");
+            break;
+    }
+    return;
+}
+
+
+static void fprint_node_val(const TreeNode * node, FILE * fp)
+{
+    MY_ASSERT(node);
+    MY_ASSERT(fp);
+
+    switch (node->value.type)
+    {
+        case TOKEN_TYPES_NUMBER:
+            fprintf(fp, "%d %.2lf ", TOKEN_TYPES_NUMBER, node->value.val.num);
+            break;
+        case TOKEN_TYPES_SYMBOL:
+            fprintf(fp, "%d %c ", TOKEN_TYPES_SYMBOL, node->value.val.sym);
+            break;
+        case TOKEN_TYPES_KEY_WORD:
+            fprintf(fp, "%d %zd ", TOKEN_TYPES_KEY_WORD, node->value.val.kwd_id);
+            break;
+        case TOKEN_TYPES_OPERATOR:
+            fprintf(fp, "%d %zd ", TOKEN_TYPES_OPERATOR, node->value.val.op_id);
+            break;
+        case TOKEN_TYPES_NAME_TABLE_ELEM:
+            fprintf(fp, "%d %zd ", TOKEN_TYPES_NAME_TABLE_ELEM, node->value.val.elem_id);
+            break;
+        case TOKEN_TYPES_TERMINATOR:
+            fprintf(fp, "%d \\0 ", TOKEN_TYPES_TERMINATOR);
             break;
         default:
             MY_ASSERT(0 && "UNREACHABLE");
@@ -417,17 +450,16 @@ TError_t tree_copy_branch(Tree * dst_tree, TreeNode * dst_node, const TreeNode *
 }
 
 
-void tree_save_to_file(Tree * tree, NameTable * name_table,
+void tree_save_to_file(Tree * tree, 
                        const char * data_file_name)
 {
     MY_ASSERT(tree);
-    MY_ASSERT(name_table);
 
     FILE * fp = file_open(data_file_name, "wb");
     if (!fp) return;
 
     size_t recursion_depth = 0;
-    save_to_file_rec(tree->root, fp, name_table, &recursion_depth);
+    save_to_file_rec(tree->root, fp, &recursion_depth);
 
     fclose(fp);
     return;
@@ -435,11 +467,10 @@ void tree_save_to_file(Tree * tree, NameTable * name_table,
 
 
 static void save_to_file_rec(TreeNode * node, FILE * fp,
-                             NameTable * name_table, size_t * rec_depth)
+                             size_t * rec_depth)
 {
     MY_ASSERT(node);
     MY_ASSERT(fp);
-    MY_ASSERT(name_table);
     MY_ASSERT(rec_depth);
 
     fprint_tabulation(fp, *rec_depth);
@@ -448,14 +479,14 @@ static void save_to_file_rec(TreeNode * node, FILE * fp,
     fprintf(fp, "{\n");
     if (node->left)
     {
-        save_to_file_rec(node->left, fp, name_table, rec_depth);
+        save_to_file_rec(node->left, fp, rec_depth);
     }     
     fprint_tabulation(fp, *rec_depth);   
-    fprint_node_val(node, fp, name_table);
+    fprint_node_val(node, fp);
     fprintf(fp, "\n");
     if (node->right)
     {
-        save_to_file_rec(node->right, fp, name_table, rec_depth);
+        save_to_file_rec(node->right, fp, rec_depth);
     }
     (*rec_depth)--;
     fprint_tabulation(fp, *rec_depth);
@@ -474,5 +505,133 @@ static void fprint_tabulation(FILE * fp, int recursion_depth)
         fprintf(fp, "\t");
     }
 
+    return;
+}
+
+
+TError_t buf_to_tree(Tree * tree, char * tree_buffer)
+{
+    MY_ASSERT(tree);
+    MY_ASSERT(tree_buffer);
+
+    tree_buffer = skip_spaces(tree_buffer);
+
+    if (!is_open_braket(tree_buffer))
+        return TREE_ERRORS_CREATE_SYNTAXIS_ERROR;
+    tree_buffer++;
+
+    tree_buffer = skip_spaces(tree_buffer);
+
+    return buf_to_tree_rec(tree, tree->root, &tree_buffer);
+}
+
+
+static TError_t buf_to_tree_rec(Tree * tree, TreeNode * node, char * * tree_buf_ptr)
+{
+    MY_ASSERT(tree);
+    MY_ASSERT(node);
+    MY_ASSERT(tree_buf_ptr);
+    MY_ASSERT(*tree_buf_ptr);
+
+    TError_t tree_errors  = 0;
+
+    *tree_buf_ptr = skip_spaces(*tree_buf_ptr);
+
+    if (is_open_braket(*tree_buf_ptr))
+    {
+        (*tree_buf_ptr)++;
+
+        TreeNode * * next_node = &(node->left);
+        if (tree_errors = tree_create_node(tree, node, next_node))
+            return tree_errors;
+
+        if (tree_errors = buf_to_tree_rec(tree, *next_node, tree_buf_ptr))
+            return tree_errors;
+    }
+
+    *tree_buf_ptr = skip_spaces(*tree_buf_ptr);
+
+    if (is_open_braket(*tree_buf_ptr) || is_close_braket(*tree_buf_ptr))
+        return TREE_ERRORS_CREATE_SYNTAXIS_ERROR;
+
+    buf_to_tree_get_val(tree, node, tree_buf_ptr);
+
+    *tree_buf_ptr = skip_spaces(*tree_buf_ptr);
+
+    if (is_open_braket(*tree_buf_ptr))
+    {
+        (*tree_buf_ptr)++;
+
+        TreeNode * * next_node = &(node->right);
+        if (tree_errors = tree_create_node(tree, node, next_node))
+            return tree_errors;
+
+        if (tree_errors = buf_to_tree_rec(tree, *next_node, tree_buf_ptr))
+            return tree_errors;
+    }
+
+    *tree_buf_ptr = skip_spaces(*tree_buf_ptr);
+
+    if (!is_close_braket(*tree_buf_ptr))
+        return TREE_ERRORS_CREATE_SYNTAXIS_ERROR;
+
+    (*tree_buf_ptr)++;
+
+    return tree_errors;
+}
+
+
+static void buf_to_tree_get_val(Tree * tree, TreeNode * node, char * * tree_buf_ptr)
+{
+    MY_ASSERT(tree);
+    MY_ASSERT(node);
+    MY_ASSERT(tree_buf_ptr);
+    MY_ASSERT(*tree_buf_ptr);
+
+    TokenTypes token_type = TOKEN_TYPES_TERMINATOR;
+    int skip_syms_num = 0;
+    sscanf(*tree_buf_ptr, "%d%n", (int *) &token_type, &skip_syms_num);
+    *tree_buf_ptr += skip_syms_num + 1;
+
+    switch (token_type)
+    {
+        case TOKEN_TYPES_NUMBER:
+            sscanf(*tree_buf_ptr, "%lf%n", &(node->value.val.num),
+                                           &skip_syms_num);
+            break;
+
+        case TOKEN_TYPES_SYMBOL:
+            sscanf(*tree_buf_ptr, "%c%n", &(node->value.val.sym),
+                                          &skip_syms_num);
+            break;
+
+        case TOKEN_TYPES_NAME_TABLE_ELEM:
+            sscanf(*tree_buf_ptr, "%zd%n", &(node->value.val.elem_id),
+                                           &skip_syms_num);
+            break;
+        
+        case TOKEN_TYPES_OPERATOR:
+            sscanf(*tree_buf_ptr, "%zd%n", &(node->value.val.op_id),
+                                           &skip_syms_num);
+            break;
+
+        case TOKEN_TYPES_KEY_WORD:
+            sscanf(*tree_buf_ptr, "%zd%n", &(node->value.val.kwd_id),
+                                           &skip_syms_num);
+            break;
+
+        case TOKEN_TYPES_TERMINATOR:
+            sscanf(*tree_buf_ptr, "%c%n", &(node->value.val.sym),
+                                          &skip_syms_num);
+            break;
+
+        default:
+            MY_ASSERT(0 && "UNREACHABLE");
+            break;
+
+    }
+    node->value.type = token_type;
+    
+    *tree_buf_ptr += skip_syms_num;
     return;
 }

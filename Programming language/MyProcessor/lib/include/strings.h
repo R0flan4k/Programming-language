@@ -9,13 +9,6 @@
     void show_strings(const char * const * strings, const size_t strings_num);
     const char * skip_word(const char * buffer);
     const char * next_word(const char * buffer);
-    char * skip_spaces(char * buffer);
-    char * skip_no_spaces(char * buffer);
-    char * make_file_extension(char * target, const char * file_name, const char * extension);
-    size_t get_input(char * buffer, size_t buffer_size);
-    bool is_braket(char character);
-    bool is_open_braket(const char * buffer_ptr);
-    bool is_close_braket(const char * buffer_ptr);
-    void delete_terminator(char * buffer);
+    const char * skip_spaces(const char * buffer);
 
 #endif // STRINGS_H

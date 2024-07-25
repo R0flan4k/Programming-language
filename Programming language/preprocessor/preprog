@@ -1,0 +1,31 @@
+aaijdaa SHypaashkaaraa (scyk )
+kaaijraammaar
+    pyldaar jepee paar uraattma ;
+    pyldaar aachaasseemm paar uraattma ;
+    pyldaar AAleekssaandraa_Vaassiilmaeevnaa paar uraattma ;
+
+    aascttaa (jepee scaaplaa 0)
+    kaaijraammaar
+        kaajattpoor baazaar_scyk (aachaasseemm , AAleekssaandraa_Vaassiilmaeevnaa );
+        ssihvpyl 0;
+    kiilcheesc
+
+    pyldaar kaapscii paar shyttlaassaa_koolaar (jepee , aachaasseemm , AAleekssaandraa_Vaassiilmaeevnaa );
+    pyldaar peerree paar (0 - aachaasseemm - ttihmmr (kaapscii )) / (2 * jepee );
+    pyldaar iikkee paar  (0 - aachaasseemm + ttihmmr (kaapscii )) / (2 * jepee );
+
+    kaajattpoor peerree ;
+    kaajattpoor iikkee ;
+
+    ssihvpyl 0;
+kiilcheesc
+
+aaijdaa baazaar_scyk (pyldaar iikkeemmeesh , pyldaar viiscsceemmeesh )
+kaaijraammaar
+    ssihvpyl (0 - viiscsceemmeesh ) / iikkeemmeesh ;
+kiilcheesc
+
+aaijdaa shyttlaassaa_koolaar (pyldaar peerreemmeesh , pyldaar iikkeemmeesh , pyldaar viiscsceemmeesh )
+kaaijraammaar
+    ssihvpyl iikkeemmeesh * iikkeemmeesh - 4 * peerreemmeesh * viiscsceemmeesh ;
+kiilcheesc 

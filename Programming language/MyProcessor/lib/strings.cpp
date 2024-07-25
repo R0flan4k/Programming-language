@@ -86,96 +86,12 @@ const char * next_word(const char * buffer)
 }
 
 
-char * skip_spaces(char * buffer)
+const char * skip_spaces(const char * buffer)
 {
     MY_ASSERT(buffer);
 
-    while (isspace(*buffer) && *buffer != EOF && *buffer != '\0')
+    while (isspace(*buffer) && *buffer != EOF && *buffer != '\0' && *buffer != ';')
         buffer++;
 
     return (buffer);
-}
-
-
-char * skip_no_spaces(char * buffer)
-{
-    MY_ASSERT(buffer);
-
-    while (!isspace(*buffer) && *buffer!= EOF && *buffer != '\0' &&
-           *buffer != '{' && *buffer != '}')
-        buffer++;
-
-    return (buffer);
-}
-
-
-char * make_file_extension(char * target, const char * file_name, const char * extension)
-{
-    MY_ASSERT(target);
-    MY_ASSERT(file_name);
-    MY_ASSERT(extension);
-
-    strcpy(target, file_name);
-    strcat(target, extension);
-
-    return target;
-}
-
-
-size_t get_input(char * buffer, size_t buffer_size)
-{
-    MY_ASSERT(buffer);
-
-    char character = 0;
-    size_t i = 0;
-
-    while ((character = getchar()) != '\n' && character != EOF &&
-           i < buffer_size)
-    {
-        *buffer = character;
-        buffer++;
-        i++;
-    }
-
-    return i;
-}
-
-
-bool is_braket(char character)
-{
-    if (character == '{' ||
-        character == '}' ||
-        character == '(' ||
-        character == ')')
-    {
-        return true;
-    }
-
-    return false;
-}
-
-
-void delete_terminator(char * buffer)
-{
-    MY_ASSERT(buffer);
-
-    while (*buffer != '\0')
-    {
-        buffer++;
-    }
-    *buffer = ' ';
-
-    return;
-}
-
-
-bool is_open_braket(const char * buffer_ptr)
-{
-    return *buffer_ptr == '{';
-}
-
-
-bool is_close_braket(const char * buffer_ptr)
-{
-    return *buffer_ptr == '}';
 }

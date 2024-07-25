@@ -1,0 +1,32 @@
+in
+call :factorial
+hlt
+
+
+:factorial
+pop rdx
+
+push 1
+pop rbx
+
+push 1
+pop rax  ; rax = q_i
+
+:step    ; fact name
+push 1
+push rax
+add
+pop rax
+
+push rbx
+push rax
+mul
+pop rbx
+
+push rax
+push rdx
+jb :step
+
+push rbx
+out
+ret
