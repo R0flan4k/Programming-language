@@ -86,10 +86,14 @@ static bool is_operator(char * buffer, size_t * index);
 static bool is_key_word(char * buffer, size_t * index);
 static bool is_spec_symbol(char symbol);
 static bool is_comprassion_op(LangToken * token);
+<<<<<<< HEAD:Programming language/frontend/src/front_end.cpp
 
 #ifndef NDEBUG
     static void tok_dump(LangToken * token);
 #endif // NDEBUG
+=======
+static void tok_dump(LangToken * token);
+>>>>>>> 5c70f3eee48983fe22ddc999cc6b6b5a219562a3:Programming language/front end/src/front_end.cpp
 
 
 FrontEndErrors separate_tokens(char * buffer, LangToken * tokens,
@@ -1345,6 +1349,32 @@ void fe_error_output(FrontEndErrors fe_errors, size_t token_index)
                 break;
         }
 
+<<<<<<< HEAD:Programming language/frontend/src/front_end.cpp
         return;
+=======
+    printf("Cur token: ");
+    switch (token->type)
+    {
+        case TOKEN_TYPES_KEY_WORD:
+            printf("%s (kwd)\n", KEY_WORDS_ARRAY[token->val.kwd_id].name);
+            break;
+        case TOKEN_TYPES_NAME_TABLE_ELEM:
+            printf("%zd (nt elem id)\n", token->val.elem_id);
+            break;
+        case TOKEN_TYPES_NUMBER:
+            printf("%.2lf (num)\n", token->val.num);
+            break;
+        case TOKEN_TYPES_OPERATOR:
+            printf("%s (op)\n", OPERATORS_ARRAY[token->val.op_id].value);
+            break;
+        case TOKEN_TYPES_SYMBOL:
+            printf("%c (sym)\n", token->val.sym);
+            break;
+        case TOKEN_TYPES_TERMINATOR:
+            printf("\\0 (terminator)\n");
+            break;
+        default:
+            break;
+>>>>>>> 5c70f3eee48983fe22ddc999cc6b6b5a219562a3:Programming language/front end/src/front_end.cpp
     }
 #endif // NDEBUG

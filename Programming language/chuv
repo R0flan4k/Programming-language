@@ -1,0 +1,24 @@
+cd ./preprocessor
+./preprocessing --source ../$1
+cd ..
+cd ./frontend
+./front_end --source ../preprocessor/preprog
+cd ..
+cd ./middleend
+./middle_end --source ../frontend/feprog
+cd ..
+cd ./backend
+./back_end --source ../middleend/meprog
+cd ..
+cd ./MyProcessor
+make lang
+cd ..
+
+echo cd ./MyProcessor >> prog.sh
+echo make exec >> prog.sh
+echo cd .. >> prog.sh
+echo exit 0 >> prog.sh
+
+chmod u+rx ./prog.sh
+
+

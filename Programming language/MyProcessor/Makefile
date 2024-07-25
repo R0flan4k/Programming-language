@@ -19,9 +19,12 @@ quadratic:
 run:
 	@./ASSEMBLER/assembler --source ../backend/beprog.sasm --target ./AsmBin/source.bin
 	@./SPU/spu --source ./AsmBin/source.bin
+<<<<<<< HEAD
 
 lang:
 	@./ASSEMBLER/assembler --source ../backend/beprog.sasm --target ../prog.opa
 
 exec:
 	@./SPU/spu --source ../prog.opa
+=======
+>>>>>>> 5c70f3eee48983fe22ddc999cc6b6b5a219562a3

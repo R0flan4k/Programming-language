@@ -104,7 +104,13 @@ Error_t spu_unary(Stack * stk, SpuUnaryMathOperations mode)
             break;
     }
 
+<<<<<<< HEAD
     return stack_push(stk, result);
+=======
+    errors = stack_push(stk, result);
+
+    return errors;
+>>>>>>> 5c70f3eee48983fe22ddc999cc6b6b5a219562a3
 }
 
 

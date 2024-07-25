@@ -48,8 +48,11 @@ void preprocessing(char * src_buf, char * trg_buf,
     
         pre_is_var_part = cur_is_var_part;
         MY_ASSERT(i + extra < trg_buf_size);
+<<<<<<< HEAD
         if (i + extra >= trg_buf_size)
             return;
+=======
+>>>>>>> 5c70f3eee48983fe22ddc999cc6b6b5a219562a3
     }
     trg_buf[i + extra] = '\0';
 
@@ -419,9 +422,13 @@ static void print_rus_to_eng(char * src_buf, char * trg_buf,
         }
     }
     else
+<<<<<<< HEAD
     {
         MY_ASSERT(0 && "UNREACHABLE");
     }
+=======
+        MY_ASSERT(0 && "UNREACHABLE");
+>>>>>>> 5c70f3eee48983fe22ddc999cc6b6b5a219562a3
 
     return;
 }

@@ -12,7 +12,11 @@ static TError_t calculation_optimization(Tree * program_tree, TreeNode * node,
                                          bool * success);
 static TError_t try_calculate_node(Tree * program_tree, TreeNode * node,
                                    bool * success);
+<<<<<<< HEAD
 static double calculate_new_value(TreeNode * node);
+=======
+static double calculate_new_value(Tree * program_tree, TreeNode * node);
+>>>>>>> 5c70f3eee48983fe22ddc999cc6b6b5a219562a3
 static TError_t replace_optimization(Tree * program_tree, TreeNode * node, 
                                      bool * success);
 static TError_t try_replace_node(Tree * program_tree, TreeNode * node,
@@ -90,7 +94,11 @@ static TError_t try_calculate_node(Tree * program_tree, TreeNode * node,
         node->value.type != TOKEN_TYPES_OPERATOR)
         return 0;
 
+<<<<<<< HEAD
     node->value.val.num = calculate_new_value(node);
+=======
+    node->value.val.num = calculate_new_value(program_tree, node);
+>>>>>>> 5c70f3eee48983fe22ddc999cc6b6b5a219562a3
     node->value.type = TOKEN_TYPES_NUMBER;
 
     TError_t tree_errors  = tree_delete_branch(program_tree, &(node->left));
@@ -102,8 +110,14 @@ static TError_t try_calculate_node(Tree * program_tree, TreeNode * node,
 }
 
 
+<<<<<<< HEAD
 static double calculate_new_value(TreeNode * node)
 {
+=======
+static double calculate_new_value(Tree * program_tree, TreeNode * node)
+{
+    MY_ASSERT(program_tree);
+>>>>>>> 5c70f3eee48983fe22ddc999cc6b6b5a219562a3
     MY_ASSERT(node);
     MY_ASSERT(node->value.type == TOKEN_TYPES_OPERATOR);
     MY_ASSERT(node->left->value.type  == TOKEN_TYPES_NUMBER);
