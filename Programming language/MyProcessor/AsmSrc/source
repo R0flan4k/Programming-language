@@ -1,0 +1,69 @@
+call :proc0
+hlt
+
+;------------------------------------------
+:proc0
+;-declaration-
+	push 4.000
+	pop [1]
+;------------
+;-declaration-
+	push [1]
+	in
+	add
+	pop [2]
+;------------
+;-----if-----
+	push [1]
+	push 1.000
+	ja :true1
+	push 0
+	jmp :exit1
+:true1
+	push 1
+:exit1
+	push 0
+	je :fail0
+	push 1.000
+	pop [1]
+:fail0
+;------------
+;---while----
+:check2
+	push [1]
+	push 3.000
+	jb :true3
+	push 0
+	jmp :exit3
+:true3
+	push 1
+:exit3
+	push 0
+	je :fail2
+	push [1]
+	push 1.000
+	add
+	pop [1]
+	jmp :check2
+:fail2
+;------------
+	push [1]
+	out
+;---return---
+	push [1]
+	ret
+;------------
+;------------------------------------------
+
+;------------------------------------------
+:proc3
+;-declaration-
+	push 2.000
+	pop [4]
+;------------
+;---return---
+	push [4]
+	ret
+;------------
+;------------------------------------------
+
