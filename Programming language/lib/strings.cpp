@@ -167,3 +167,15 @@ void delete_terminator(char * buffer)
 
     return;
 }
+
+
+bool is_open_braket(const char * buffer_ptr)
+{
+    return *buffer_ptr == '{';
+}
+
+
+bool is_close_braket(const char * buffer_ptr)
+{
+    return *buffer_ptr == '}';
+}
